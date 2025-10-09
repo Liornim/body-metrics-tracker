@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Metrics Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            border: 2px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+        .comparison-table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .today-row {
+            background-color: #e8f5e8 !important;
+            font-weight: bold;
+        }
+        .average-row {
+            background-color: #fff3cd !important;
+            font-weight: bold;
+        }
+        .difference-row {
+            background-color: #d1ecf1 !important;
+            font-weight: bold;
+        }
+        .second-group-row {
+            background-color: #e2e3e5 !important;
+            font-weight: bold;
+        }
+        .positive {
+            color: #28a745;
+        }
+        .negative {
+            color: #dc3545;
+        }
+        .neutral {
+            color: #6c757d;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>מדדים 3 ימים מול ממוצע</h1>
+        
+        <div style="margin-bottom: 20px; text-align: center;">
+            <label for="datePicker" style="font-size: 16px; font-weight: bold; margin-left: 10px;">בחר תאריך:</label>
+            <div style="position: relative; display: inline-block; margin-left: 10px;">
+                <input type="date" id="datePicker" style="padding: 8px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 4px; position: absolute; opacity: 0; z-index: 2; width: 100%;">
+                <div id="dateDisplay" style="padding: 8px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 4px; background-color: white; min-width: 120px; text-align: center; cursor: pointer;">בחר תאריך</div>
+            </div>
+            <button onclick="loadComparisonData()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px;">הצג השוואה</button>
+        </div>
+        
+        <div id="loading" class="loading">טוען נתונים...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="comparisonTable" style="display: none;">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>תאריך</th>
+                        <th>משקל (ק״ג)</th>
+                        <th>שריר (ק״ג)</th>
+                        <th>שומן (ק״ג)</th>
+                        <th>נוזלים (ק״ג)</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="progressChart" style="display: none; margin-top: 30px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                <!-- Weight Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 style="text-align: center; margin-bottom: 10px;">משקל - ממוצע 3 ימים</h4>
+                    <canvas id="weightChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+                
+                <!-- Fat Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 style="text-align: center; margin-bottom: 10px;">שומן - ממוצע 3 ימים</h4>
+                    <canvas id="fatChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+                
+                <!-- Muscle Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 style="text-align: center; margin-bottom: 10px;">שריר - ממוצע 3 ימים</h4>
+                    <canvas id="muscleChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('datePicker').value = todayStr;
+            
+            // Display today's date in DD/MM/YYYY format
+            const parts = todayStr.split('-');
+            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            document.getElementById('dateDisplay').textContent = formattedDate;
+            
+            loadComparisonData();
+        });
+
+        // Format date picker display to show DD/MM/YYYY
+        document.getElementById('datePicker').addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (selectedDate) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for display
+                const parts = selectedDate.split('-');
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                
+                // Update the display div
+                document.getElementById('dateDisplay').textContent = formattedDate;
+                console.log('Selected date (DD/MM/YYYY):', formattedDate);
+            }
+        });
+
+        // Make the display div clickable to open date picker
+        document.getElementById('dateDisplay').addEventListener('click', function() {
+            document.getElementById('datePicker').showPicker();
+        });
+        
+        async function loadComparisonData() {
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    displayComparison(data.data);
+                } else {
+                    showError('אין נתונים זמינים');
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת הנתונים:', error);
+                showError('שגיאה בטעינת הנתונים');
+            }
+        }
+        
+        function displayComparison(data) {
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+            
+            // Sort data by date (newest first)
+            const sortedData = data.sort((a, b) => {
+                const parseDate = (dateStr) => {
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split('/');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    } else if (dateStr.includes('T')) {
+                        return new Date(dateStr.split('T')[0] + 'T00:00:00');
+                    } else {
+                        return new Date(dateStr + 'T00:00:00');
+                    }
+                };
+                
+                const dateA = parseDate(a[0]);
+                const dateB = parseDate(b[0]);
+                return dateB - dateA;
+            });
+            
+            // Get selected date from date picker
+            const selectedDateInput = document.getElementById('datePicker').value;
+            
+            if (!selectedDateInput) {
+                showError('אנא בחר תאריך');
+                return;
+            }
+            
+            // Convert from YYYY-MM-DD to DD/MM/YYYY
+            const date = new Date(selectedDateInput);
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            const selectedDateStr = `${dd}/${mm}/${yyyy}`;
+            
+            // Find selected date's data
+            const selectedDateData = sortedData.find(row => {
+                let dateStr = row[0];
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                if (dateStr.includes('-') && dateStr.length === 10) {
+                    const parts = dateStr.split('-');
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr === selectedDateStr;
+            });
+            
+            if (!selectedDateData) {
+                showError(`לא נמצאו נתונים עבור התאריך ${selectedDateStr}`);
+                return;
+            }
+            
+            // Find the index of selected date in sorted data
+            const selectedDateIndex = sortedData.findIndex(row => {
+                let dateStr = row[0];
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                if (dateStr.includes('-') && dateStr.length === 10) {
+                    const parts = dateStr.split('-');
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr === selectedDateStr;
+            });
+            
+            // Get 3 days before selected date (7-9/09 if selected is 10/09)
+            const last3Days = sortedData.filter((row, index) => {
+                return index > selectedDateIndex && index <= selectedDateIndex + 3;
+            });
+            
+            if (last3Days.length === 0) {
+                showError('לא נמצאו נתונים עבור 3 הימים שלפני התאריך הנבחר');
+                return;
+            }
+            
+            // Get 3 days including selected date (8-10/09 if selected is 10/09)
+            const current3Days = sortedData.filter((row, index) => {
+                return index >= selectedDateIndex && index < selectedDateIndex + 3;
+            });
+            
+            // Get previous 3 days for second comparison (5-7/09 if selected is 10/09)
+            const previous3Days = sortedData.filter((row, index) => {
+                return index > selectedDateIndex + 2 && index <= selectedDateIndex + 5;
+            });
+            
+            // Calculate averages for last 3 days (before selected date)
+            const averages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            last3Days.forEach(row => {
+                averages.weight += parseFloat(row[1]) || 0;
+                averages.muscle += parseFloat(row[2]) || 0;
+                averages.fat += parseFloat(row[3]) || 0;
+                averages.fluids += parseFloat(row[4]) || 0;
+            });
+            
+            const count = last3Days.length;
+            averages.weight = averages.weight / count;
+            averages.muscle = averages.muscle / count;
+            averages.fat = averages.fat / count;
+            averages.fluids = averages.fluids / count;
+            
+            // Calculate averages for current 3 days (including selected date)
+            const currentAverages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            current3Days.forEach(row => {
+                currentAverages.weight += parseFloat(row[1]) || 0;
+                currentAverages.muscle += parseFloat(row[2]) || 0;
+                currentAverages.fat += parseFloat(row[3]) || 0;
+                currentAverages.fluids += parseFloat(row[4]) || 0;
+            });
+            
+            const currentCount = current3Days.length;
+            currentAverages.weight = currentAverages.weight / currentCount;
+            currentAverages.muscle = currentAverages.muscle / currentCount;
+            currentAverages.fat = currentAverages.fat / currentCount;
+            currentAverages.fluids = currentAverages.fluids / currentCount;
+            
+            // Calculate averages for previous 3 days (for second comparison)
+            const previousAverages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            if (previous3Days.length > 0) {
+                previous3Days.forEach(row => {
+                    previousAverages.weight += parseFloat(row[1]) || 0;
+                    previousAverages.muscle += parseFloat(row[2]) || 0;
+                    previousAverages.fat += parseFloat(row[3]) || 0;
+                    previousAverages.fluids += parseFloat(row[4]) || 0;
+                });
+                
+                const previousCount = previous3Days.length;
+                previousAverages.weight = previousAverages.weight / previousCount;
+                previousAverages.muscle = previousAverages.muscle / previousCount;
+                previousAverages.fat = previousAverages.fat / previousCount;
+                previousAverages.fluids = previousAverages.fluids / previousCount;
+            }
+            
+            // Display comparison table
+            const tbody = document.getElementById('comparisonTableBody');
+            tbody.innerHTML = '';
+            
+            // Selected date's row
+            const selectedDateRow = tbody.insertRow();
+            selectedDateRow.className = 'today-row';
+            selectedDateRow.insertCell().textContent = `התאריך הנבחר (${selectedDateStr})`;
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[1]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[2]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[3]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[4]).toFixed(2);
+            
+            // Average row (3 days before selected date)
+            const averageRow = tbody.insertRow();
+            averageRow.className = 'average-row';
+            averageRow.insertCell().textContent = `ממוצע 3 ימים לפני התאריך הנבחר`;
+            averageRow.insertCell().textContent = averages.weight.toFixed(2);
+            averageRow.insertCell().textContent = averages.muscle.toFixed(2);
+            averageRow.insertCell().textContent = averages.fat.toFixed(2);
+            averageRow.insertCell().textContent = averages.fluids.toFixed(2);
+            
+            // First difference row (selected date vs 3 days before) - same color as average
+            const differenceRow = tbody.insertRow();
+            differenceRow.className = 'average-row';
+            differenceRow.insertCell().textContent = 'הפרש (התאריך הנבחר - ממוצע 3 ימים לפני)';
+            
+            // Calculate and display differences
+            const weightDiff = parseFloat(selectedDateData[1]) - averages.weight;
+            const muscleDiff = parseFloat(selectedDateData[2]) - averages.muscle;
+            const fatDiff = parseFloat(selectedDateData[3]) - averages.fat;
+            const fluidsDiff = parseFloat(selectedDateData[4]) - averages.fluids;
+            
+            // Weight difference (negative is good - losing weight)
+            const weightCell = differenceRow.insertCell();
+            weightCell.textContent = (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(2);
+            weightCell.className = weightDiff < 0 ? 'positive' : weightDiff > 0 ? 'negative' : 'neutral';
+            
+            // Muscle difference (positive is good - gaining muscle)
+            const muscleCell = differenceRow.insertCell();
+            muscleCell.textContent = (muscleDiff >= 0 ? '+' : '') + muscleDiff.toFixed(2);
+            muscleCell.className = muscleDiff > 0 ? 'positive' : muscleDiff < 0 ? 'negative' : 'neutral';
+            
+            // Fat difference (negative is good - losing fat)
+            const fatCell = differenceRow.insertCell();
+            fatCell.textContent = (fatDiff >= 0 ? '+' : '') + fatDiff.toFixed(2);
+            fatCell.className = fatDiff < 0 ? 'positive' : fatDiff > 0 ? 'negative' : 'neutral';
+            
+            // Fluids difference (positive is good - gaining fluids)
+            const fluidsCell = differenceRow.insertCell();
+            fluidsCell.textContent = (fluidsDiff >= 0 ? '+' : '') + fluidsDiff.toFixed(2);
+            fluidsCell.className = fluidsDiff > 0 ? 'positive' : fluidsDiff < 0 ? 'negative' : 'neutral';
+            
+            // Current 3 days average row (including selected date)
+            const currentAverageRow = tbody.insertRow();
+            currentAverageRow.className = 'second-group-row';
+            currentAverageRow.insertCell().textContent = `ממוצע 3 ימים כולל התאריך הנבחר`;
+            currentAverageRow.insertCell().textContent = currentAverages.weight.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.muscle.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.fat.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.fluids.toFixed(2);
+            
+            // Second comparison row (3 days including selected date vs previous 3 days) - same color as second group
+            if (previous3Days.length > 0) {
+                const secondComparisonRow = tbody.insertRow();
+                secondComparisonRow.className = 'second-group-row';
+                secondComparisonRow.insertCell().textContent = 'הפרש (ממוצע 3 ימים כולל התאריך - ממוצע 3 ימים קודמים)';
+                
+                // Calculate differences between current 3 days and previous 3 days
+                const currentVsPreviousWeight = currentAverages.weight - previousAverages.weight;
+                const currentVsPreviousMuscle = currentAverages.muscle - previousAverages.muscle;
+                const currentVsPreviousFat = currentAverages.fat - previousAverages.fat;
+                const currentVsPreviousFluids = currentAverages.fluids - previousAverages.fluids;
+                
+                // Weight difference (negative is good - losing weight)
+                const currentVsPreviousWeightCell = secondComparisonRow.insertCell();
+                currentVsPreviousWeightCell.textContent = (currentVsPreviousWeight >= 0 ? '+' : '') + currentVsPreviousWeight.toFixed(2);
+                currentVsPreviousWeightCell.className = currentVsPreviousWeight < 0 ? 'positive' : currentVsPreviousWeight > 0 ? 'negative' : 'neutral';
+                
+                // Muscle difference (positive is good - gaining muscle)
+                const currentVsPreviousMuscleCell = secondComparisonRow.insertCell();
+                currentVsPreviousMuscleCell.textContent = (currentVsPreviousMuscle >= 0 ? '+' : '') + currentVsPreviousMuscle.toFixed(2);
+                currentVsPreviousMuscleCell.className = currentVsPreviousMuscle > 0 ? 'positive' : currentVsPreviousMuscle < 0 ? 'negative' : 'neutral';
+                
+                // Fat difference (negative is good - losing fat)
+                const currentVsPreviousFatCell = secondComparisonRow.insertCell();
+                currentVsPreviousFatCell.textContent = (currentVsPreviousFat >= 0 ? '+' : '') + currentVsPreviousFat.toFixed(2);
+                currentVsPreviousFatCell.className = currentVsPreviousFat < 0 ? 'positive' : currentVsPreviousFat > 0 ? 'negative' : 'neutral';
+                
+                // Fluids difference (positive is good - gaining fluids)
+                const currentVsPreviousFluidsCell = secondComparisonRow.insertCell();
+                currentVsPreviousFluidsCell.textContent = (currentVsPreviousFluids >= 0 ? '+' : '') + currentVsPreviousFluids.toFixed(2);
+                currentVsPreviousFluidsCell.className = currentVsPreviousFluids > 0 ? 'positive' : currentVsPreviousFluids < 0 ? 'negative' : 'neutral';
+            }
+            
+            // Show table
+            document.getElementById('comparisonTable').style.display = 'block';
+            
+            // Create progress charts
+            createProgressCharts(sortedData, selectedDateIndex);
+        }
+        
+        function createProgressCharts(data, selectedDateIndex) {
+            // Get the last 10 data points from selected date
+            const chartData = data.slice(selectedDateIndex, selectedDateIndex + 10);
+            
+            // Calculate 3-day averages for all metrics
+            const chartDataPoints = {
+                weight: [],
+                fat: [],
+                muscle: []
+            };
+            const labels = [];
+            
+            for (let i = 0; i < chartData.length - 2; i++) {
+                // Get 3 consecutive days (data is sorted newest first, so we need to reverse for chronological order)
+                const threeDays = chartData.slice(i, i + 3).reverse();
+                
+                // Calculate averages for all metrics
+                let totalWeight = 0, totalFat = 0, totalMuscle = 0;
+                let validDays = 0;
+                
+                threeDays.forEach(day => {
+                    const weight = parseFloat(day[1]) || 0;
+                    const fat = parseFloat(day[3]) || 0;
+                    const muscle = parseFloat(day[2]) || 0;
+                    
+                    if (weight > 0) {
+                        totalWeight += weight;
+                        totalFat += fat;
+                        totalMuscle += muscle;
+                        validDays++;
+                    }
+                });
+                
+                if (validDays > 0) {
+                    // Format date for label (use the last/most recent date of the 3 days)
+                    let dateStr = threeDays[2][0]; // Last date (most recent)
+                    console.log('Raw date from Google Sheets:', dateStr);
+                    
+                    if (dateStr.includes('T')) {
+                        dateStr = dateStr.split('T')[0];
+                        console.log('After removing time:', dateStr);
+                    }
+                    
+                    // Check if date is in DD/MM/YYYY format and convert to DD/MM
+                    if (dateStr.includes('/') && dateStr.length === 10) {
+                        const parts = dateStr.split('/');
+                        dateStr = `${parts[0]}/${parts[1]}`;
+                        console.log('Graph date formatted to DD/MM:', dateStr);
+                    } else if (dateStr.includes('-') && dateStr.length === 10) {
+                        const parts = dateStr.split('-');
+                        dateStr = `${parts[2]}/${parts[1]}`;
+                        console.log('Graph date formatted to DD/MM:', dateStr);
+                    } else {
+                        console.log('Date format not recognized, using as-is:', dateStr);
+                    }
+                    
+                    chartDataPoints.weight.push(totalWeight / validDays);
+                    chartDataPoints.fat.push(totalFat / validDays);
+                    chartDataPoints.muscle.push(totalMuscle / validDays);
+                    labels.push(dateStr);
+                }
+            }
+            
+            // Create all three charts
+            createSingleChart('weightChart', chartDataPoints.weight, labels, '#dc3545', 'משקל (ק״ג)');
+            createSingleChart('fatChart', chartDataPoints.fat, labels, '#ffc107', 'שומן (ק״ג)');
+            createSingleChart('muscleChart', chartDataPoints.muscle, labels, '#28a745', 'שריר (ק״ג)');
+            
+            // Show charts
+            document.getElementById('progressChart').style.display = 'block';
+        }
+        
+        function createSingleChart(canvasId, dataPoints, labels, color, metricName) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear previous chart
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Chart dimensions
+            const margin = 50;
+            const chartWidth = canvas.width - 2 * margin;
+            const chartHeight = canvas.height - 2 * margin;
+            
+            // Find min/max values for scaling
+            const minValue = Math.min(...dataPoints);
+            const maxValue = Math.max(...dataPoints);
+            const range = maxValue - minValue;
+            const padding = range * 0.1;
+            const yMin = minValue - padding;
+            const yMax = maxValue + padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, canvas.height - margin);
+            ctx.lineTo(canvas.width - margin, canvas.height - margin);
+            ctx.stroke();
+            
+            // Draw grid lines and Y-axis labels
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'right';
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = margin + (chartHeight * i / 4);
+                ctx.beginPath();
+                ctx.moveTo(margin, y);
+                ctx.lineTo(canvas.width - margin, y);
+                ctx.stroke();
+                
+                // Add Y-axis labels
+                const value = yMax - (yMax - yMin) * i / 4;
+                ctx.fillText(value.toFixed(1), margin - 5, y + 3);
+            }
+            
+            // Draw data line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            dataPoints.forEach((value, index) => {
+                const x = margin + (chartWidth * index / (dataPoints.length - 1));
+                const y = canvas.height - margin - (chartHeight * (value - yMin) / (yMax - yMin));
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            // Draw data points
+            ctx.fillStyle = color;
+            dataPoints.forEach((value, index) => {
+                const x = margin + (chartWidth * index / (dataPoints.length - 1));
+                const y = canvas.height - margin - (chartHeight * (value - yMin) / (yMax - yMin));
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Add value above the point
+                ctx.fillStyle = '#333';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(value.toFixed(1), x, y - 10);
+                ctx.fillStyle = color;
+            });
+            
+            // Draw X-axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            
+            labels.forEach((label, index) => {
+                const x = margin + (chartWidth * index / (labels.length - 1));
+                ctx.fillText(label, x, canvas.height - margin + 15);
+            });
+            
+            // Draw legend
+            const legendY = 25;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = color;
+            ctx.fillRect(margin, legendY - 10, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText(metricName, margin + 20, legendY);
+        }
+        
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
