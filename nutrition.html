@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition & Fitness Tracker</title>
+</head>
+<body>
+    <h1>Nutrition & Fitness Tracker</h1>
+    
+    <form id="nutritionForm">
+        <div>
+            <label for="date">תאריך:</label>
+            <input type="date" id="date" required>
+        </div>
+        
+        <div>
+            <label for="calories">קלוריות:</label>
+            <input type="number" id="calories" step="1" min="0" required>
+        </div>
+        
+        <div>
+            <label for="fat">שומן (גרם):</label>
+            <input type="number" id="fat" step="0.1" min="0" required>
+        </div>
+        
+        <div>
+            <label for="carbs">פחמימות (גרם):</label>
+            <input type="number" id="carbs" step="0.1" min="0" required>
+        </div>
+        
+        <div>
+            <label for="protein">חלבון (גרם):</label>
+            <input type="number" id="protein" step="0.1" min="0" required>
+        </div>
+        
+        <div>
+            <label for="fiber">סיבים (גרם):</label>
+            <input type="number" id="fiber" step="0.1" min="0" required>
+        </div>
+        
+        <div>
+            <label for="steps">צעדים:</label>
+            <input type="number" id="steps" step="1" min="0" required>
+        </div>
+        
+        <button type="submit">הוסף נתון</button>
+    </form>
+    
+    <h2>היסטוריית תזונה</h2>
+    <button onclick="exportToExcel()" style="margin-bottom: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">ייצוא לאקסל</button>
+    <div id="nutritionTable">
+        <table style="border-collapse: collapse; border: 2px solid #333; width: 100%;">
+            <thead id="nutritionTableHead"></thead>
+            <tbody id="nutritionTableBody"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        // Set today's date as default
+        document.getElementById("date").value = new Date().toISOString().split('T')[0];
+        
+        // Load data from Google Sheets on page load
+        loadFromGoogleSheets();
+        
+        document.getElementById("nutritionForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            // Convert date from YYYY-MM-DD to DD/MM/YYYY
+            const inputDate = document.getElementById("date").value;
+            const dateObj = new Date(inputDate);
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            const formattedDate = `${day}/${month}/${year}`;
+            
+            const nutritionData = {
+                date: formattedDate,
+                calories: parseFloat(document.getElementById("calories").value),
+                fat: parseFloat(document.getElementById("fat").value),
+                carbs: parseFloat(document.getElementById("carbs").value),
+                protein: parseFloat(document.getElementById("protein").value),
+                fiber: parseFloat(document.getElementById("fiber").value),
+                steps: parseFloat(document.getElementById("steps").value)
+            };
+            
+            // Save to Google Sheets
+            saveToGoogleSheets(nutritionData);
+            
+            // Reset form
+            document.getElementById("nutritionForm").reset();
+            document.getElementById("date").value = new Date().toISOString().split('T')[0];
+            
+            alert("הנתון נוסף בהצלחה!");
+        });
+        
+        function saveToGoogleSheets(nutrition) {
+            try {
+                console.log('שולח נתון ל-Google Sheets:', nutrition);
+                // Use JSONP instead of fetch to bypass CORS
+                const script = document.createElement('script');
+                const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+                
+                window[callbackName] = function(data) {
+                    console.log('נתון נשמר ב-Google Sheets בהצלחה');
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                    // Reload data after saving
+                    loadFromGoogleSheets();
+                };
+                
+                const url = `https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=addNutrition&date=${nutrition.date}&calories=${nutrition.calories}&fat=${nutrition.fat}&carbs=${nutrition.carbs}&protein=${nutrition.protein}&fiber=${nutrition.fiber}&steps=${nutrition.steps}&callback=${callbackName}`;
+                console.log('שולח ל-URL:', url);
+                script.src = url;
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                console.error('שגיאה בחיבור ל-Google Sheets:', error);
+            }
+        }
+        
+        async function loadFromGoogleSheets() {
+            try {
+                console.log('טוען נתונים מ-Google Sheets...');
+                const response = await fetch(`https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=getNutrition`);
+                const data = await response.json();
+                
+                console.log('תגובה מ-Google Sheets:', data);
+                
+                if (data.success && data.data) {
+                    displayNutritionTable(data.data);
+                } else {
+                    console.log('אין נתונים ב-Google Sheets או שגיאה:', data);
+                    displayNutritionTable([]);
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינה מ-Google Sheets:', error);
+                displayNutritionTable([]);
+            }
+        }
+        
+        function displayNutritionTable(data) {
+            const thead = document.getElementById("nutritionTableHead");
+            const tbody = document.getElementById("nutritionTableBody");
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px;">אין נתונים</td></tr>';
+                return;
+            }
+            
+            // Create headers
+            const headerRow = thead.insertRow();
+            const headers = ['תאריך', 'קלוריות', 'שומן (גרם)', 'פחמימות (גרם)', 'חלבון (גרם)', 'סיבים (גרם)', 'צעדים', 'פחמימות נטו', 'קלוריות נטו', 'ברוטו מול 2000', 'נטו מול 2000', 'ברוטו מול 1450', 'נטו מול 1450', 'ברוטו מול 1175', 'נטו מול 1175'];
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                th.style.cssText = 'border: 1px solid #333; padding: 8px; background-color: #f0f0f0; font-weight: bold;';
+                headerRow.appendChild(th);
+            });
+            
+            // Create averages row
+            const averagesRow = thead.insertRow();
+            const averageLabels = ['ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע', 'ממוצע'];
+            
+            // Calculate averages
+            const averages = [];
+            if (data.length > 0) {
+                // Initialize sums
+                const sums = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                
+                data.forEach(row => {
+                    // Original data columns (0-6)
+                    for (let i = 0; i < 7; i++) {
+                        if (i === 0) continue; // Skip date column
+                        sums[i] += parseFloat(row[i]) || 0;
+                    }
+                    
+                    // Calculated columns
+                    const calories = parseFloat(row[1]) || 0;
+                    const carbs = parseFloat(row[3]) || 0;
+                    const fiber = parseFloat(row[5]) || 0;
+                    const steps = parseFloat(row[6]) || 0;
+                    
+                    // Net carbs
+                    sums[7] += carbs - fiber;
+                    
+                    // Net calories
+                    sums[8] += calories - (steps / 25);
+                    
+                    // Gross vs targets
+                    sums[9] += calories - 2000;
+                    sums[11] += calories - 1450;
+                    sums[13] += calories - 1175;
+                    
+                    // Net vs targets
+                    const netCalories = calories - (steps / 25);
+                    sums[10] += netCalories - 2000;
+                    sums[12] += netCalories - 1450;
+                    sums[14] += netCalories - 1175;
+                });
+                
+                // Calculate averages
+                for (let i = 0; i < 15; i++) {
+                    if (i === 0) {
+                        averages[i] = ''; // Date column
+                    } else {
+                        averages[i] = (sums[i] / data.length).toFixed(1);
+                    }
+                }
+            }
+            
+            // Add average values to row
+            for (let i = 0; i < 15; i++) {
+                const td = document.createElement('td');
+                td.textContent = i === 0 ? 'ממוצע' : averages[i];
+                td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center; background-color: #e8f4f8; font-weight: bold;';
+                averagesRow.appendChild(td);
+            }
+            
+            // Sort by date (newest first) - handle DD/MM/YYYY format
+            data.sort((a, b) => {
+                // Parse DD/MM/YYYY format dates
+                const parseDate = (dateStr) => {
+                    if (dateStr.includes('/')) {
+                        // DD/MM/YYYY format
+                        const parts = dateStr.split('/');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    } else if (dateStr.includes('T')) {
+                        // ISO format with time
+                        return new Date(dateStr.split('T')[0] + 'T00:00:00');
+                    } else {
+                        // YYYY-MM-DD format
+                        return new Date(dateStr + 'T00:00:00');
+                    }
+                };
+                
+                const dateA = parseDate(a[0]);
+                const dateB = parseDate(b[0]);
+                return dateB - dateA; // Newest first
+            });
+            
+            // Create data rows - display exactly as from Google Sheets
+            data.forEach(row => {
+                const tr = tbody.insertRow();
+                row.forEach((cell, index) => {
+                    const td = tr.insertCell();
+                    if (index === 0) {
+                        // Date column - format to DD/MM/YYYY and handle timezone
+                        let dateStr = cell;
+                        
+                        if (cell.includes('T')) {
+                            // If it's a full datetime string, extract just the date part
+                            dateStr = cell.split('T')[0];
+                        }
+                        // Convert from YYYY-MM-DD to DD/MM/YYYY if needed
+                        if (dateStr.includes('-') && dateStr.length === 10) {
+                            const parts = dateStr.split('-');
+                            dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                        // If it's already in DD/MM/YYYY format, use it as is
+                        td.textContent = dateStr;
+                    } else {
+                        // Number columns - display original data
+                        td.textContent = parseFloat(cell).toFixed(1);
+                    }
+                    td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                });
+                
+                // Add net carbs calculation
+                const carbs = parseFloat(row[3]) || 0;
+                const fiber = parseFloat(row[5]) || 0;
+                const netCarbs = carbs - fiber;
+                
+                const netCarbsTd = tr.insertCell();
+                netCarbsTd.textContent = netCarbs.toFixed(1);
+                netCarbsTd.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add net calories calculation
+                const calories = parseFloat(row[1]) || 0;
+                const steps = parseFloat(row[6]) || 0;
+                const netCalories = calories - (steps / 25);
+                
+                const netCaloriesTd = tr.insertCell();
+                netCaloriesTd.textContent = netCalories.toFixed(1);
+                netCaloriesTd.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add ברוטו מול 2000 calculation
+                const grossCalories = parseFloat(row[1]) || 0;
+                const grossVs2000 = grossCalories - 2000;
+                
+                const grossVs2000Td = tr.insertCell();
+                grossVs2000Td.textContent = grossVs2000.toFixed(1);
+                grossVs2000Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add נטו מול 2000 calculation
+                const netVs2000 = netCalories - 2000;
+                
+                const netVs2000Td = tr.insertCell();
+                netVs2000Td.textContent = netVs2000.toFixed(1);
+                netVs2000Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add ברוטו מול 1450 calculation
+                const grossVs1450 = grossCalories - 1450;
+                
+                const grossVs1450Td = tr.insertCell();
+                grossVs1450Td.textContent = grossVs1450.toFixed(1);
+                grossVs1450Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add נטו מול 1450 calculation
+                const netVs1450 = netCalories - 1450;
+                
+                const netVs1450Td = tr.insertCell();
+                netVs1450Td.textContent = netVs1450.toFixed(1);
+                netVs1450Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add ברוטו מול 1175 calculation
+                const grossVs1175 = grossCalories - 1175;
+                
+                const grossVs1175Td = tr.insertCell();
+                grossVs1175Td.textContent = grossVs1175.toFixed(1);
+                grossVs1175Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+                
+                // Add נטו מול 1175 calculation as the last column
+                const netVs1175 = netCalories - 1175;
+                
+                const netVs1175Td = tr.insertCell();
+                netVs1175Td.textContent = netVs1175.toFixed(1);
+                netVs1175Td.style.cssText = 'border: 1px solid #333; padding: 8px; text-align: center;';
+            });
+        }
+        
+        function exportToExcel() {
+            try {
+                // Get data from Google Sheets
+                fetch(`https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=getNutrition`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            // Create CSV content with BOM for Hebrew support
+                            let csvContent = '\uFEFF'; // BOM for Hebrew
+                            
+                            // Headers
+                            const headers = ['Date', 'Calories', 'Fat (g)', 'Carbs (g)', 'Protein (g)', 'Fiber (g)', 'Steps', 'Net Carbs', 'Net Calories', 'Gross vs 2000', 'Net vs 2000', 'Gross vs 1450', 'Net vs 1450', 'Gross vs 1175', 'Net vs 1175'];
+                            csvContent += headers.join(',') + '\n';
+                            
+                            // Calculate averages
+                            const averages = [];
+                            if (data.data.length > 0) {
+                                const sums = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                                
+                                data.data.forEach(row => {
+                                    // Original data columns (0-6)
+                                    for (let i = 0; i < 7; i++) {
+                                        if (i === 0) continue; // Skip date column
+                                        sums[i] += parseFloat(row[i]) || 0;
+                                    }
+                                    
+                                    // Calculated columns
+                                    const calories = parseFloat(row[1]) || 0;
+                                    const carbs = parseFloat(row[3]) || 0;
+                                    const fiber = parseFloat(row[5]) || 0;
+                                    const steps = parseFloat(row[6]) || 0;
+                                    
+                                    // Net carbs
+                                    sums[7] += carbs - fiber;
+                                    
+                                    // Net calories
+                                    sums[8] += calories - (steps / 25);
+                                    
+                                    // Gross vs targets
+                                    sums[9] += calories - 2000;
+                                    sums[11] += calories - 1450;
+                                    sums[13] += calories - 1175;
+                                    
+                                    // Net vs targets
+                                    const netCalories = calories - (steps / 25);
+                                    sums[10] += netCalories - 2000;
+                                    sums[12] += netCalories - 1450;
+                                    sums[14] += netCalories - 1175;
+                                });
+                                
+                                // Calculate averages
+                                for (let i = 0; i < 15; i++) {
+                                    if (i === 0) {
+                                        averages[i] = 'Average';
+                                    } else {
+                                        averages[i] = (sums[i] / data.data.length).toFixed(1);
+                                    }
+                                }
+                            }
+                            
+                            // Add averages row
+                            csvContent += averages.join(',') + '\n';
+                            
+                            // Sort data from newest to oldest (same as web table)
+                            const sortedData = [...data.data].sort((a, b) => {
+                                const parseDate = (dateStr) => {
+                                    if (dateStr.includes('/')) {
+                                        // DD/MM/YYYY format
+                                        const parts = dateStr.split('/');
+                                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                                    } else if (dateStr.includes('T')) {
+                                        // ISO format with time
+                                        return new Date(dateStr.split('T')[0] + 'T00:00:00');
+                                    } else {
+                                        // YYYY-MM-DD format
+                                        return new Date(dateStr + 'T00:00:00');
+                                    }
+                                };
+                                
+                                const dateA = parseDate(a[0]);
+                                const dateB = parseDate(b[0]);
+                                return dateB - dateA; // Newest first
+                            });
+                            
+                            // Add data rows
+                            sortedData.forEach(row => {
+                                const rowData = [];
+                                
+                                // Original data
+                                for (let i = 0; i < 7; i++) {
+                                    if (i === 0) {
+                                        // Format date
+                                        let dateStr = row[i];
+                                        if (dateStr.includes('T')) {
+                                            dateStr = dateStr.split('T')[0];
+                                        }
+                                        if (dateStr.includes('-') && dateStr.length === 10) {
+                                            const parts = dateStr.split('-');
+                                            dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                        }
+                                        rowData.push(dateStr);
+                                    } else {
+                                        rowData.push(parseFloat(row[i]).toFixed(1));
+                                    }
+                                }
+                                
+                                // Calculated columns
+                                const calories = parseFloat(row[1]) || 0;
+                                const carbs = parseFloat(row[3]) || 0;
+                                const fiber = parseFloat(row[5]) || 0;
+                                const steps = parseFloat(row[6]) || 0;
+                                
+                                // Net carbs
+                                rowData.push((carbs - fiber).toFixed(1));
+                                
+                                // Net calories
+                                const netCalories = calories - (steps / 25);
+                                rowData.push(netCalories.toFixed(1));
+                                
+                                // Gross vs targets
+                                rowData.push((calories - 2000).toFixed(1));
+                                rowData.push((netCalories - 2000).toFixed(1));
+                                rowData.push((calories - 1450).toFixed(1));
+                                rowData.push((netCalories - 1450).toFixed(1));
+                                rowData.push((calories - 1175).toFixed(1));
+                                rowData.push((netCalories - 1175).toFixed(1));
+                                
+                                csvContent += rowData.join(',') + '\n';
+                            });
+                            
+                            // Create and download file
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const link = document.createElement('a');
+                            const url = URL.createObjectURL(blob);
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', 'nutrition_data.csv');
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            alert('הקובץ יוצא בהצלחה!');
+                        } else {
+                            alert('שגיאה בטעינת הנתונים');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('שגיאה בייצוא:', error);
+                        alert('שגיאה בייצוא הנתונים');
+                    });
+            } catch (error) {
+                console.error('שגיאה בייצוא:', error);
+                alert('שגיאה בייצוא הנתונים');
+            }
+        }
+    </script>
+</body>
+</html>
