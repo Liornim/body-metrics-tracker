@@ -205,16 +205,16 @@
                 <div class="stat-label">אפליקציות מתמחות</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">תמיכה בעברית</div>
+                <div class="stat-number" id="last3DaysProteinAvg">--</div>
+                <div class="stat-label">ממוצע חלבון 3 ימים אחרונים</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">📱</div>
-                <div class="stat-label">תמיכה במובייל</div>
+                <div class="stat-number" id="last3DaysCalorieAvg">--</div>
+                <div class="stat-label">ממוצע קלוריות 3 ימים אחרונים</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">☁️</div>
-                <div class="stat-label">סנכרון בענן</div>
+                <div class="stat-number" id="lastDaysAvgWeight">--</div>
+                <div class="stat-label">ממוצע משקל 3 ימים אחרונים</div>
             </div>
         </div>
         
@@ -310,7 +310,63 @@
             <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.7;">
                 💡 טיפ: התחל עם "מעקב מדדי גוף" למדידות יומיות, ואז השתמש ב"מעקב תזונה" לנתונים תזונתיים
             </p>
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; text-align: center;">
+                <h4 style="margin-bottom: 15px; color: white;">📊 גישה ישירה לנתונים</h4>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
+                    <a href="https://docs.google.com/spreadsheets/d/1YFL1OMugoQOTQqBOQLIq44D8aDqB5gRr4To1WYKJ8io/edit?gid=0#gid=0" 
+                       target="_blank" 
+                       style="display: inline-block; background: linear-gradient(45deg, #FF6B6B, #4ECDC4); color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                        📈 פתח Google Sheet
+                    </a>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.8rem; opacity: 0.8;">
+                    גישה ישירה לגיליון הנתונים עם כל המדידות והתזונה
+                </p>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Load and display statistics
+        async function loadStatistics() {
+            try {
+                // Load nutrition data for calorie average
+                const nutritionResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=getNutrition');
+                const nutritionData = await nutritionResponse.json();
+                
+                if (nutritionData.success && nutritionData.data && nutritionData.data.length >= 3) {
+                    // Calculate last 3 days calorie average
+                    const last3Days = nutritionData.data.slice(0, 3);
+                    const calorieSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
+                    const calorieAvg = Math.round(calorieSum / 3);
+                    document.getElementById('last3DaysCalorieAvg').textContent = calorieAvg;
+                    
+                    // Calculate last 3 days protein average (protein is at index 4 in nutrition data)
+                    const proteinSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[4]) || 0), 0);
+                    const proteinAvg = (proteinSum / 3).toFixed(1);
+                    document.getElementById('last3DaysProteinAvg').textContent = proteinAvg + ' גרם';
+                }
+                
+                // Load body metrics data for weight average
+                const bodyMetricsResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=get');
+                const bodyMetricsData = await bodyMetricsResponse.json();
+                
+                if (bodyMetricsData.success && bodyMetricsData.data && bodyMetricsData.data.length >= 3) {
+                    // Calculate last 3 days weight average from גיליון1, column משקל (ק״ג) which is index 1
+                    const last3Days = bodyMetricsData.data.slice(0, 3);
+                    const weightSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
+                    const weightAvg = (weightSum / 3).toFixed(2);
+                    document.getElementById('lastDaysAvgWeight').textContent = weightAvg + ' ק"ג';
+                }
+                
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                // Keep the default "--" values if there's an error
+            }
+        }
+        
+        // Load statistics when page loads
+        document.addEventListener('DOMContentLoaded', loadStatistics);
+    </script>
 </body>
 </html>
