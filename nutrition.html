@@ -48,7 +48,10 @@
     </form>
     
     <h2>היסטוריית תזונה</h2>
-    <button onclick="exportToExcel()" style="margin-bottom: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">ייצוא לאקסל</button>
+    <div style="margin-bottom: 10px;">
+        <button onclick="exportToExcel()" style="margin-right: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">ייצוא לאקסל</button>
+        <button onclick="syncToNewTab()" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">🔄 סנכרן לטאב החדש</button>
+    </div>
     <div id="nutritionTable">
         <table style="border-collapse: collapse; border: 2px solid #333; width: 100%;">
             <thead id="nutritionTableHead"></thead>
@@ -484,6 +487,108 @@
             } catch (error) {
                 console.error('שגיאה בייצוא:', error);
                 alert('שגיאה בייצוא הנתונים');
+            }
+        }
+        
+        // New sync function - copies displayed table data to new tab
+        function syncToNewTab() {
+            if (confirm('האם ברצונך לסנכרן את כל הנתונים לטאב החדש "Nutrition & Fitness Tracker LOG"?\nפעולה זו תעתיק את כל הנתונים המוצגים בטבלה.')) {
+                syncDisplayedDataToNewTab();
+            }
+        }
+        
+        function syncDisplayedDataToNewTab() {
+            try {
+                console.log('מתחיל סנכרון הנתונים המוצגים לטאב החדש...');
+                
+                // Get the current table data from the displayed table
+                const tableBody = document.getElementById('nutritionTableBody');
+                const rows = tableBody.querySelectorAll('tr');
+                
+                if (rows.length === 0) {
+                    alert('אין נתונים להעתקה. הטבלה ריקה.');
+                    return;
+                }
+                
+                console.log(`נמצאו ${rows.length} שורות להעתקה`);
+                
+                // Create sheet name with today's date
+                const today = new Date();
+                const todayStr = today.getDate().toString().padStart(2, '0') + '/' + 
+                               (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                               today.getFullYear();
+                const sheetName = `Nutrition_history_${todayStr.replace(/\//g, '_')}`;
+                
+                // Prepare all data with ALL calculated columns
+                const allData = [];
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 7) {
+                        const rowData = [];
+                        
+                        // Original data (first 7 columns)
+                        for (let i = 0; i < 7; i++) {
+                            if (i === 0) {
+                                // Date column
+                                rowData.push(cells[i].textContent.trim());
+                            } else {
+                                // Number columns
+                                rowData.push(parseFloat(cells[i].textContent) || 0);
+                            }
+                        }
+                        
+                        // Calculated columns (same as web page)
+                        const calories = parseFloat(cells[1].textContent) || 0;
+                        const carbs = parseFloat(cells[3].textContent) || 0;
+                        const fiber = parseFloat(cells[5].textContent) || 0;
+                        const steps = parseFloat(cells[6].textContent) || 0;
+                        
+                        // Net carbs
+                        rowData.push(carbs - fiber);
+                        
+                        // Net calories
+                        const netCalories = calories - (steps / 25);
+                        rowData.push(netCalories);
+                        
+                        // Gross vs targets
+                        rowData.push(calories - 2000);
+                        rowData.push(netCalories - 2000);
+                        rowData.push(calories - 1450);
+                        rowData.push(netCalories - 1450);
+                        rowData.push(calories - 1175);
+                        rowData.push(netCalories - 1175);
+                        
+                        allData.push(rowData);
+                    }
+                });
+                
+                // Send all data at once to Google Sheets
+                const script = document.createElement('script');
+                const callbackName = 'sync_callback_' + Math.round(100000 * Math.random());
+                
+                window[callbackName] = function(response) {
+                    console.log('סנכרון הושלם:', response.success ? 'הצלחה' : 'שגיאה');
+                    
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                    
+                    if (response.success) {
+                        alert(`סנכרון הושלם! ${allData.length} רשומות הועתקו לגיליון החדש "${sheetName}" ב-Google Sheets עם כל העמודות המחושבות.`);
+                    } else {
+                        alert('שגיאה בסנכרון הנתונים');
+                    }
+                };
+                
+                // Use the new action to send all data at once
+                const url = `https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=copyCompleteData&sheetName=${encodeURIComponent(sheetName)}&data=${encodeURIComponent(JSON.stringify(allData))}&callback=${callbackName}`;
+                
+                script.src = url;
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                console.error('שגיאה בסנכרון:', error);
+                alert('שגיאה בסנכרון הנתונים');
             }
         }
     </script>
