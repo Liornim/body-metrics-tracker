@@ -99,6 +99,18 @@
             font-size: 14px;
             color: #666;
         }
+        
+        /* Mobile spacing fix for large numbers */
+        @media (max-width: 768px) {
+            .progress-text {
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            .progress-text span {
+                min-width: 120px;
+                text-align: center;
+            }
+        }
         .remaining {
             font-size: 18px;
             font-weight: bold;
