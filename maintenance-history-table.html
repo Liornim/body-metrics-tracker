@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טבלת היסטוריית תחזוקה</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .date-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .date-selector h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .date-input {
+            display: inline-block;
+            position: relative;
+            margin: 0 10px;
+        }
+        
+        .date-input input {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .date-display {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .maintenance-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .maintenance-table th {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .maintenance-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .maintenance-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .date-cell {
+            background: #e8f5e8;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        
+        .maintenance-value {
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        
+        .maintenance-value.low {
+            color: #f44336;
+        }
+        
+        .maintenance-value.high {
+            color: #ff9800;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .explanation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .explanation h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .explanation p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .maintenance-table th,
+            .maintenance-table td {
+                padding: 8px 5px;
+                font-size: 12px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 טבלת היסטוריית תחזוקה</h1>
+            <p>הצגת 5 חישובי תחזוקה אחרונים לכל חלון זמן</p>
+        </div>
+        
+        <div class="content">
+            <div class="explanation">
+                <h4>📋 איך זה עובד?</h4>
+                <p><strong>הטבלה מציגה:</strong> 5 חישובי תחזוקה אחרונים לכל חלון זמן (3, 5, 7, 9, 14 ימים)</p>
+                <p><strong>כל שורה:</strong> תאריך אחרון + 4 תאריכים קודמים</p>
+                <p><strong>כל עמודה:</strong> חלון זמן שונה עם חישוב התחזוקה האמיתית</p>
+                <p><strong>הנוסחה:</strong> תחזוקה = קלוריות ממוצעות + (ירידת משקל × 7700 ÷ ימים) - (צעדים ממוצעים ÷ 25)</p>
+            </div>
+            
+            <div class="date-selector">
+                <h3>📅 בחר תאריך אחרון לחישוב</h3>
+                <div class="date-input">
+                    <input type="date" id="datePicker" style="opacity: 0; position: absolute; z-index: 2; width: 100%;">
+                    <div id="dateDisplay" class="date-display">בחר תאריך</div>
+                </div>
+                <button class="btn" onclick="calculateMaintenanceHistory()">📊 הצג היסטוריה</button>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                🔄 טוען נתונים ומחשב היסטוריית תחזוקה...
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div id="tableContainer" class="table-container" style="display: none;">
+                <!-- Table will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('datePicker').value = todayStr;
+            
+            // Display today's date in DD/MM/YYYY format
+            const parts = todayStr.split('-');
+            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            document.getElementById('dateDisplay').textContent = formattedDate;
+        });
+
+        // Format date picker display
+        document.getElementById('datePicker').addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (selectedDate) {
+                const parts = selectedDate.split('-');
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                document.getElementById('dateDisplay').textContent = formattedDate;
+            }
+        });
+
+        // Make the display div clickable
+        document.getElementById('dateDisplay').addEventListener('click', function() {
+            document.getElementById('datePicker').showPicker();
+        });
+
+        async function calculateMaintenanceHistory() {
+            const selectedDate = document.getElementById('datePicker').value;
+            if (!selectedDate) {
+                showError('אנא בחר תאריך');
+                return;
+            }
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('tableContainer').style.display = 'none';
+
+                // Load both body metrics and nutrition data
+                const [bodyMetricsResponse, nutritionResponse] = await Promise.all([
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=get`),
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`)
+                ]);
+
+                const bodyMetricsData = await bodyMetricsResponse.json();
+                const nutritionData = await nutritionResponse.json();
+
+                if (!bodyMetricsData.success || !nutritionData.success) {
+                    showError('שגיאה בטעינת נתונים');
+                    return;
+                }
+
+                // Convert selected date to DD/MM/YYYY for comparison
+                const selectedDateParts = selectedDate.split('-');
+                const selectedDateFormatted = `${selectedDateParts[2]}/${selectedDateParts[1]}/${selectedDateParts[0]}`;
+
+                // Calculate maintenance history for each window
+                const windows = [3, 5, 7, 9, 14];
+                const historyData = [];
+
+                for (const windowDays of windows) {
+                    const windowHistory = calculateWindowHistory(
+                        bodyMetricsData.data, 
+                        nutritionData.data, 
+                        selectedDateFormatted, 
+                        windowDays
+                    );
+                    historyData.push({
+                        windowDays,
+                        history: windowHistory
+                    });
+                }
+
+                displayMaintenanceTable(historyData, selectedDateFormatted);
+
+            } catch (error) {
+                showError('שגיאה בחיבור לשרת: ' + error.message);
+            }
+        }
+
+        function calculateWindowHistory(bodyData, nutritionData, selectedDate, windowDays) {
+            // Sort data by date (newest first)
+            const sortedBodyData = [...bodyData].sort((a, b) => new Date(b[0]) - new Date(a[0]));
+            const sortedNutritionData = [...nutritionData].sort((a, b) => new Date(b[0]) - new Date(a[0]));
+
+            // Find the selected date index
+            const selectedIndex = sortedBodyData.findIndex(row => row[0] === selectedDate);
+            if (selectedIndex === -1) {
+                console.log(`Selected date ${selectedDate} not found in body data`);
+                return [];
+            }
+
+            const history = [];
+
+            // Calculate maintenance for last 5 dates
+            for (let i = 0; i < 5; i++) {
+                const currentDateIndex = selectedIndex + i;
+                
+                // Get current window data
+                const currentWindowBody = sortedBodyData.slice(currentDateIndex, currentDateIndex + windowDays);
+                const currentWindowNutrition = sortedNutritionData.slice(currentDateIndex, currentDateIndex + windowDays);
+
+                // Get previous window data
+                const previousWindowBody = sortedBodyData.slice(currentDateIndex + windowDays, currentDateIndex + windowDays * 2);
+                const previousWindowNutrition = sortedNutritionData.slice(currentDateIndex + windowDays, currentDateIndex + windowDays * 2);
+
+                if (currentWindowBody.length < windowDays || previousWindowBody.length < windowDays) {
+                    console.log(`Not enough data for ${windowDays}-day window at index ${currentDateIndex}`);
+                    break;
+                }
+
+                // Calculate averages for current window
+                const currentAvgWeight = currentWindowBody.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+                const currentAvgCalories = currentWindowNutrition.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+                const currentAvgSteps = currentWindowNutrition.reduce((sum, row) => sum + parseFloat(row[6]), 0) / windowDays;
+
+                // Calculate averages for previous window
+                const previousAvgWeight = previousWindowBody.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+
+                // Calculate weight loss (positive = loss, negative = gain)
+                const weightLoss = previousAvgWeight - currentAvgWeight;
+
+                // Calculate real maintenance
+                const weightLossCalories = (weightLoss * 7700) / windowDays;
+                const stepsCalories = currentAvgSteps / 25;
+                const realMaintenance = currentAvgCalories + weightLossCalories - stepsCalories;
+
+                history.push({
+                    date: currentWindowBody[0][0], // First date in current window
+                    maintenance: realMaintenance.toFixed(0),
+                    weightLoss: weightLoss.toFixed(2),
+                    avgCalories: currentAvgCalories.toFixed(0),
+                    avgSteps: currentAvgSteps.toFixed(0)
+                });
+            }
+
+            return history;
+        }
+
+        function displayMaintenanceTable(historyData, selectedDate) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
+
+            const tableContainer = document.getElementById('tableContainer');
+            
+            // Create table
+            const table = document.createElement('table');
+            table.className = 'maintenance-table';
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const dateHeader = document.createElement('th');
+            dateHeader.textContent = 'תאריך';
+            dateHeader.style.minWidth = '100px';
+            headerRow.appendChild(dateHeader);
+            
+            historyData.forEach(windowData => {
+                const th = document.createElement('th');
+                th.textContent = `${windowData.windowDays} ימים`;
+                th.style.minWidth = '120px';
+                headerRow.appendChild(th);
+            });
+            
+            // Add average column header
+            const avgHeader = document.createElement('th');
+            avgHeader.textContent = 'ממוצע';
+            avgHeader.style.minWidth = '100px';
+            avgHeader.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
+            headerRow.appendChild(avgHeader);
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            // Get the maximum number of history entries
+            const maxHistoryLength = Math.max(...historyData.map(w => w.history.length));
+            
+            // Calculate column averages
+            const columnAverages = [];
+            for (let j = 0; j < historyData.length; j++) {
+                const windowData = historyData[j];
+                const validValues = windowData.history.filter(h => h).map(h => parseFloat(h.maintenance));
+                const avg = validValues.length > 0 ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length : 0;
+                columnAverages.push(avg);
+            }
+            
+            for (let i = 0; i < maxHistoryLength; i++) {
+                const row = document.createElement('tr');
+                
+                // Date cell
+                const dateCell = document.createElement('td');
+                dateCell.className = 'date-cell';
+                if (historyData[0].history[i]) {
+                    dateCell.textContent = historyData[0].history[i].date;
+                }
+                row.appendChild(dateCell);
+                
+                // Calculate row average
+                let rowSum = 0;
+                let rowCount = 0;
+                
+                // Maintenance cells for each window
+                historyData.forEach((windowData, j) => {
+                    const cell = document.createElement('td');
+                    cell.className = 'maintenance-value';
+                    
+                    if (windowData.history[i]) {
+                        const maintenance = parseFloat(windowData.history[i].maintenance);
+                        cell.textContent = maintenance;
+                        
+                        // Add to row average calculation
+                        rowSum += maintenance;
+                        rowCount++;
+                        
+                        // Color coding based on maintenance level
+                        if (maintenance < 1500) {
+                            cell.classList.add('low');
+                        } else if (maintenance > 2500) {
+                            cell.classList.add('high');
+                        }
+                    } else {
+                        cell.textContent = '-';
+                        cell.style.color = '#ccc';
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                // Add row average cell
+                const avgCell = document.createElement('td');
+                avgCell.className = 'maintenance-value';
+                avgCell.style.background = '#fff3e0';
+                avgCell.style.fontWeight = 'bold';
+                if (rowCount > 0) {
+                    const rowAvg = rowSum / rowCount;
+                    avgCell.textContent = rowAvg.toFixed(0);
+                    
+                    // Color coding for row average
+                    if (rowAvg < 1500) {
+                        avgCell.classList.add('low');
+                    } else if (rowAvg > 2500) {
+                        avgCell.classList.add('high');
+                    }
+                } else {
+                    avgCell.textContent = '-';
+                    avgCell.style.color = '#ccc';
+                }
+                row.appendChild(avgCell);
+                
+                tbody.appendChild(row);
+            }
+            
+            // Add average row
+            const avgRow = document.createElement('tr');
+            avgRow.style.background = '#e8f5e8';
+            
+            const avgLabelCell = document.createElement('td');
+            avgLabelCell.textContent = 'ממוצע';
+            avgLabelCell.style.fontWeight = 'bold';
+            avgLabelCell.style.background = '#fff3e0';
+            avgRow.appendChild(avgLabelCell);
+            
+            // Add column averages
+            historyData.forEach((windowData, j) => {
+                const avgCell = document.createElement('td');
+                avgCell.className = 'maintenance-value';
+                avgCell.style.fontWeight = 'bold';
+                avgCell.style.background = '#fff3e0';
+                avgCell.textContent = columnAverages[j].toFixed(0);
+                
+                // Color coding for column average
+                if (columnAverages[j] < 1500) {
+                    avgCell.classList.add('low');
+                } else if (columnAverages[j] > 2500) {
+                    avgCell.classList.add('high');
+                }
+                
+                avgRow.appendChild(avgCell);
+            });
+            
+            // Add overall average (average of all averages)
+            const overallAvgCell = document.createElement('td');
+            overallAvgCell.className = 'maintenance-value';
+            overallAvgCell.style.fontWeight = 'bold';
+            overallAvgCell.style.background = '#ffeb3b';
+            overallAvgCell.style.fontSize = '16px';
+            
+            const validColumnAverages = columnAverages.filter(avg => avg > 0);
+            const overallAvg = validColumnAverages.length > 0 ? 
+                validColumnAverages.reduce((sum, avg) => sum + avg, 0) / validColumnAverages.length : 0;
+            overallAvgCell.textContent = overallAvg.toFixed(0);
+            
+            // Color coding for overall average
+            if (overallAvg < 1500) {
+                overallAvgCell.classList.add('low');
+            } else if (overallAvg > 2500) {
+                overallAvgCell.classList.add('high');
+            }
+            
+            avgRow.appendChild(overallAvgCell);
+            tbody.appendChild(avgRow);
+            
+            table.appendChild(tbody);
+            tableContainer.innerHTML = '';
+            tableContainer.appendChild(table);
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+    </script>
+</body>
+</html>
