@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>יעדי תזונה מותאמים אישית</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .input-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .input-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .input-field {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+        }
+        .input-field:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .targets-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .target-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .target-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .target-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .progress-section {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .progress-item {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .progress-item h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .progress-fill.good {
+            background-color: #4CAF50;
+        }
+        .progress-fill.warning {
+            background-color: #ff9800;
+        }
+        .progress-fill.danger {
+            background-color: #f44336;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Mobile spacing fix for large numbers */
+        @media (max-width: 768px) {
+            .progress-text {
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            .progress-text span {
+                min-width: 120px;
+                text-align: center;
+            }
+        }
+        .remaining {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .remaining.positive {
+            color: #4CAF50;
+        }
+        .remaining.negative {
+            color: #f44336;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            display: none;
+        }
+        .summary-section {
+            background-color: #f3e5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .summary-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .summary-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .summary-value.good {
+            color: #4CAF50;
+        }
+        .summary-value.warning {
+            color: #ff9800;
+        }
+        .summary-value.danger {
+            color: #f44336;
+        }
+        .calculate-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .calculate-btn:hover {
+            background-color: #45a049;
+        }
+        .calculate-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>יעדי תזונה מותאמים אישית</h1>
+        
+        <div class="input-section">
+            <h2 style="margin-top: 0; text-align: center; color: #333;">הגדר את היעדים שלך</h2>
+            <div class="input-grid">
+                <div class="input-item">
+                    <h3>קלוריות מקסימום</h3>
+                    <input type="number" id="caloriesInput" class="input-field" placeholder="1590" value="1590">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">קלוריות ליום</div>
+                </div>
+                <div class="input-item">
+                    <h3>חלבון לפחות</h3>
+                    <input type="number" id="proteinInput" class="input-field" placeholder="165" value="165">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">גרם ליום</div>
+                </div>
+                <div class="input-item">
+                    <h3>פחמימות נטו מקסימום</h3>
+                    <input type="number" id="netCarbsInput" class="input-field" placeholder="120" value="120">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">גרם ליום</div>
+                </div>
+                <div class="input-item">
+                    <h3>שומן מקסימום</h3>
+                    <input type="number" id="fatInput" class="input-field" placeholder="50" value="50">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">גרם ליום</div>
+                </div>
+            </div>
+            <button class="calculate-btn" onclick="updateTargets()">עדכן יעדים וחשב</button>
+        </div>
+        
+        <div style="margin-bottom: 20px; text-align: center;">
+            <label for="datePicker" style="font-size: 16px; font-weight: bold; margin-left: 10px;">בחר תאריך:</label>
+            <div style="position: relative; display: inline-block; margin-left: 10px;">
+                <input type="date" id="datePicker" style="padding: 8px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 4px; position: absolute; opacity: 0; z-index: 2; width: 100%;">
+                <div id="dateDisplay" style="padding: 8px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 4px; background-color: white; min-width: 120px; text-align: center; cursor: pointer;">בחר תאריך</div>
+            </div>
+            <button onclick="loadNutritionData()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-left: 10px;">הצג נתונים</button>
+        </div>
+        
+        <div class="targets-section">
+            <h2 style="margin-top: 0; text-align: center; color: #333;">היעדים שלך</h2>
+            <div class="targets-grid">
+                <div class="target-item">
+                    <h3>קלוריות</h3>
+                    <div class="target-value" id="caloriesTarget">מקסימום 1590</div>
+                </div>
+                <div class="target-item">
+                    <h3>חלבון</h3>
+                    <div class="target-value" id="proteinTarget">לפחות 165 גרם</div>
+                </div>
+                <div class="target-item">
+                    <h3>פחמימות נטו</h3>
+                    <div class="target-value" id="netCarbsTarget">מקסימום 120 גרם</div>
+                </div>
+                <div class="target-item">
+                    <h3>שומן</h3>
+                    <div class="target-value" id="fatTarget">מקסימום 50 גרם</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">טוען נתונים...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="progressSection" style="display: none;">
+            <div class="progress-section">
+                <div class="progress-grid" id="progressGrid">
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <h2 style="margin-top: 0; text-align: center; color: #333;">סיכום</h2>
+                <div class="summary-grid" id="summaryGrid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Custom targets - will be updated by user input
+        let TARGETS = {
+            calories: 1590,    // calories per day (maximum)
+            protein: 165,      // grams per day (minimum)
+            netCarbs: 120,     // grams per day (maximum)
+            fat: 50            // grams per day (maximum)
+        };
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('datePicker').value = todayStr;
+            
+            // Display today's date in DD/MM/YYYY format
+            const parts = todayStr.split('-');
+            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            document.getElementById('dateDisplay').textContent = formattedDate;
+            
+            // Update targets display
+            updateTargetsDisplay();
+            
+            loadNutritionData();
+        });
+
+        // Update targets from user input
+        function updateTargets() {
+            TARGETS.calories = parseFloat(document.getElementById('caloriesInput').value) || 2000;
+            TARGETS.protein = parseFloat(document.getElementById('proteinInput').value) || 120;
+            TARGETS.netCarbs = parseFloat(document.getElementById('netCarbsInput').value) || 80;
+            TARGETS.fat = parseFloat(document.getElementById('fatInput').value) || 60;
+            
+            updateTargetsDisplay();
+            loadNutritionData();
+        }
+
+        // Update targets display
+        function updateTargetsDisplay() {
+            document.getElementById('caloriesTarget').textContent = `מקסימום ${TARGETS.calories}`;
+            document.getElementById('proteinTarget').textContent = `לפחות ${TARGETS.protein} גרם`;
+            document.getElementById('netCarbsTarget').textContent = `מקסימום ${TARGETS.netCarbs} גרם`;
+            document.getElementById('fatTarget').textContent = `מקסימום ${TARGETS.fat} גרם`;
+        }
+
+        // Format date picker display to show DD/MM/YYYY
+        document.getElementById('datePicker').addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (selectedDate) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for display
+                const parts = selectedDate.split('-');
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                
+                // Update the display div
+                document.getElementById('dateDisplay').textContent = formattedDate;
+            }
+        });
+
+        // Make the display div clickable to open date picker
+        document.getElementById('dateDisplay').addEventListener('click', function() {
+            document.getElementById('datePicker').showPicker();
+        });
+
+        async function loadNutritionData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    displayProgress(data.data);
+                } else {
+                    showError('שגיאה בטעינת נתונים: ' + (data.error || 'לא ידוע'));
+                }
+            } catch (error) {
+                showError('שגיאה בחיבור לשרת: ' + error.message);
+            }
+        }
+
+        function displayProgress(nutritionData) {
+            // Get selected date
+            const selectedDate = document.getElementById('datePicker').value;
+            if (!selectedDate) {
+                showError('אנא בחר תאריך');
+                return;
+            }
+
+            // Convert selected date to DD/MM/YYYY for comparison
+            const selectedDateParts = selectedDate.split('-');
+            const selectedDateFormatted = `${selectedDateParts[2]}/${selectedDateParts[1]}/${selectedDateParts[0]}`;
+            
+            // Find the selected date in the data
+            const selectedDateIndex = nutritionData.findIndex(row => {
+                let dateStr = row[0];
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                return dateStr === selectedDateFormatted;
+            });
+            
+            // Calculate 3-day, 4-day, and 5-day windows
+            const results3Day = calculateWindowResults(nutritionData, selectedDateIndex, selectedDateFormatted, 3);
+            const results4Day = calculateWindowResults(nutritionData, selectedDateIndex, selectedDateFormatted, 4);
+            const results5Day = calculateWindowResults(nutritionData, selectedDateIndex, selectedDateFormatted, 5);
+            
+            if (!results3Day || !results4Day || !results5Day) {
+                return; // Error already shown in calculateWindowResults
+            }
+
+            // Display all three windows side by side
+            displayAllWindows(results3Day, results4Day, results5Day, selectedDateFormatted);
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'block';
+        }
+
+        function calculateWindowResults(nutritionData, selectedDateIndex, selectedDateFormatted, windowDays) {
+            const daysBefore = windowDays - 1; // For 3-day window: 2 days before, for 4-day window: 3 days before
+            
+            let previousDays;
+            
+            if (selectedDateIndex === -1) {
+                // Selected date not found (like today's date), use most recent days
+                console.log(`Selected date not found, using ${daysBefore} most recent days for ${windowDays}-day window`);
+                previousDays = nutritionData.slice(0, daysBefore);
+            } else {
+                // Selected date found, get days after it
+                console.log(`Found selected date at index: ${selectedDateIndex} for ${windowDays}-day window`);
+                previousDays = nutritionData.slice(selectedDateIndex + 1, selectedDateIndex + 1 + daysBefore);
+            }
+            
+            if (previousDays.length < daysBefore) {
+                showError(`לא מספיק נתונים. נדרשים לפחות ${daysBefore} ימים של נתונים עבור חלון ${windowDays} ימים.`);
+                return null;
+            }
+
+            // Calculate totals for previous days
+            const totals = {
+                calories: 0,
+                protein: 0,
+                netCarbs: 0,
+                fat: 0,
+                netCalories: 0
+            };
+
+            previousDays.forEach(day => {
+                const calories = parseFloat(day[1]) || 0;  // Calories column
+                const steps = parseFloat(day[6]) || 0;     // Steps column
+                const netCalories = calories - (steps / 25); // Net calories = calories - (steps / 25)
+                
+                totals.calories += calories;
+                totals.protein += parseFloat(day[4]) || 0;  // Protein column
+                totals.fat += parseFloat(day[2]) || 0;      // Fat column
+                totals.netCalories += netCalories;
+                
+                const carbs = parseFloat(day[3]) || 0;      // Carbs column
+                const fiber = parseFloat(day[5]) || 0;     // Fiber column
+                totals.netCarbs += (carbs - fiber);         // Net carbs = carbs - fiber
+            });
+
+            // Calculate targets based on window type using custom TARGETS
+            const windowTargets = {
+                calories: TARGETS.calories * windowDays,
+                protein: TARGETS.protein * windowDays,
+                netCarbs: TARGETS.netCarbs * windowDays,
+                fat: TARGETS.fat * windowDays
+            };
+
+            // Calculate remaining for today
+            const remaining = {
+                calories: Math.max(0, windowTargets.calories - totals.calories),
+                protein: Math.max(0, windowTargets.protein - totals.protein),
+                netCarbs: Math.max(0, windowTargets.netCarbs - totals.netCarbs),
+                fat: Math.max(0, windowTargets.fat - totals.fat),
+                netCalories: Math.max(0, windowTargets.calories - totals.netCalories)
+            };
+
+            // Calculate percentages
+            const percentages = {
+                calories: Math.min(100, (totals.calories / windowTargets.calories) * 100),
+                protein: Math.min(100, (totals.protein / windowTargets.protein) * 100),
+                netCarbs: Math.min(100, (totals.netCarbs / windowTargets.netCarbs) * 100),
+                fat: Math.min(100, (totals.fat / windowTargets.fat) * 100),
+                netCalories: Math.min(100, (totals.netCalories / windowTargets.calories) * 100)
+            };
+
+            return {
+                totals,
+                targets: windowTargets,
+                remaining,
+                percentages,
+                windowDays,
+                daysBefore
+            };
+        }
+
+        function displayAllWindows(results3Day, results4Day, results5Day, selectedDate) {
+            const progressGrid = document.getElementById('progressGrid');
+            progressGrid.innerHTML = '';
+
+            // Add main header
+            const mainHeader = document.createElement('div');
+            mainHeader.style.gridColumn = '1 / -1';
+            mainHeader.style.textAlign = 'center';
+            mainHeader.style.padding = '15px';
+            mainHeader.style.backgroundColor = '#e8f5e8';
+            mainHeader.style.borderRadius = '8px';
+            mainHeader.style.marginBottom = '20px';
+            mainHeader.innerHTML = `
+                <h3 style="margin: 0 0 10px 0; color: #333;">מה אפשר לצרוך ב-${selectedDate}</h3>
+                <p style="margin: 0; color: #666; font-size: 14px;">
+                    השוואה בין חלון 3 ימים, 4 ימים ו-5 ימים
+                </p>
+            `;
+            progressGrid.appendChild(mainHeader);
+
+            // Create three side-by-side containers
+            const container3Day = document.createElement('div');
+            container3Day.style.gridColumn = '1 / 2';
+            container3Day.style.backgroundColor = '#f0f8ff';
+            container3Day.style.padding = '20px';
+            container3Day.style.borderRadius = '8px';
+            container3Day.style.margin = '10px';
+
+            const container4Day = document.createElement('div');
+            container4Day.style.gridColumn = '2 / 3';
+            container4Day.style.backgroundColor = '#fff8f0';
+            container4Day.style.padding = '20px';
+            container4Day.style.borderRadius = '8px';
+            container4Day.style.margin = '10px';
+
+            const container5Day = document.createElement('div');
+            container5Day.style.gridColumn = '3 / 4';
+            container5Day.style.backgroundColor = '#f0fff0';
+            container5Day.style.padding = '20px';
+            container5Day.style.borderRadius = '8px';
+            container5Day.style.margin = '10px';
+
+            // Add headers for each window
+            const header3Day = document.createElement('h4');
+            header3Day.style.textAlign = 'center';
+            header3Day.style.margin = '0 0 15px 0';
+            header3Day.style.color = '#1976d2';
+            header3Day.innerHTML = `חלון 3 ימים<br><small style="font-size: 12px; color: #666;">מבוסס על ${results3Day.daysBefore} ימים לפני</small>`;
+            container3Day.appendChild(header3Day);
+
+            const header4Day = document.createElement('h4');
+            header4Day.style.textAlign = 'center';
+            header4Day.style.margin = '0 0 15px 0';
+            header4Day.style.color = '#f57c00';
+            header4Day.innerHTML = `חלון 4 ימים<br><small style="font-size: 12px; color: #666;">מבוסס על ${results4Day.daysBefore} ימים לפני</small>`;
+            container4Day.appendChild(header4Day);
+
+            const header5Day = document.createElement('h4');
+            header5Day.style.textAlign = 'center';
+            header5Day.style.margin = '0 0 15px 0';
+            header5Day.style.color = '#2e7d32';
+            header5Day.innerHTML = `חלון 5 ימים<br><small style="font-size: 12px; color: #666;">מבוסס על ${results5Day.daysBefore} ימים לפני</small>`;
+            container5Day.appendChild(header5Day);
+
+            // Add progress items for each window
+            addProgressItemsToContainer(container3Day, results3Day);
+            addProgressItemsToContainer(container4Day, results4Day);
+            addProgressItemsToContainer(container5Day, results5Day);
+
+            progressGrid.appendChild(container3Day);
+            progressGrid.appendChild(container4Day);
+            progressGrid.appendChild(container5Day);
+
+            // Display summaries for all three windows
+            displayAllSummaries(results3Day, results4Day, results5Day, selectedDate);
+            
+            // Display averages across all windows
+            displayAveragesAcrossWindows(results3Day, results4Day, results5Day, selectedDate);
+        }
+
+        function addProgressItemsToContainer(container, results) {
+            const { totals, targets, remaining, percentages } = results;
+
+            // Calories
+            const caloriesItem = createProgressItem(
+                'קלוריות',
+                totals.calories,
+                targets.calories,
+                remaining.calories,
+                percentages.calories,
+                'קלוריות',
+                false
+            );
+            container.appendChild(caloriesItem);
+
+            // Net Calories
+            const netCaloriesItem = createProgressItem(
+                'קלוריות נטו',
+                totals.netCalories,
+                targets.calories,
+                remaining.netCalories,
+                percentages.netCalories,
+                'קלוריות',
+                false
+            );
+            container.appendChild(netCaloriesItem);
+
+            // Protein
+            const proteinItem = createProgressItem(
+                'חלבון',
+                totals.protein,
+                targets.protein,
+                remaining.protein,
+                percentages.protein,
+                'גרם',
+                true
+            );
+            container.appendChild(proteinItem);
+
+            // Net Carbs
+            const netCarbsItem = createProgressItem(
+                'פחמימות נטו',
+                totals.netCarbs,
+                targets.netCarbs,
+                remaining.netCarbs,
+                percentages.netCarbs,
+                'גרם',
+                false
+            );
+            container.appendChild(netCarbsItem);
+
+            // Fat
+            const fatItem = createProgressItem(
+                'שומן',
+                totals.fat,
+                targets.fat,
+                remaining.fat,
+                percentages.fat,
+                'גרם',
+                false
+            );
+            container.appendChild(fatItem);
+        }
+
+        function displayAllSummaries(results3Day, results4Day, results5Day, selectedDate) {
+            const summaryGrid = document.getElementById('summaryGrid');
+            summaryGrid.innerHTML = '';
+
+            // Create three side-by-side summary containers
+            const summaryContainer3Day = document.createElement('div');
+            summaryContainer3Day.style.gridColumn = '1 / 2';
+            summaryContainer3Day.style.backgroundColor = '#f0f8ff';
+            summaryContainer3Day.style.padding = '20px';
+            summaryContainer3Day.style.borderRadius = '8px';
+            summaryContainer3Day.style.margin = '10px';
+
+            const summaryContainer4Day = document.createElement('div');
+            summaryContainer4Day.style.gridColumn = '2 / 3';
+            summaryContainer4Day.style.backgroundColor = '#fff8f0';
+            summaryContainer4Day.style.padding = '20px';
+            summaryContainer4Day.style.borderRadius = '8px';
+            summaryContainer4Day.style.margin = '10px';
+
+            const summaryContainer5Day = document.createElement('div');
+            summaryContainer5Day.style.gridColumn = '3 / 4';
+            summaryContainer5Day.style.backgroundColor = '#f0fff0';
+            summaryContainer5Day.style.padding = '20px';
+            summaryContainer5Day.style.borderRadius = '8px';
+            summaryContainer5Day.style.margin = '10px';
+
+            // Add headers
+            const header3Day = document.createElement('h4');
+            header3Day.style.textAlign = 'center';
+            header3Day.style.margin = '0 0 15px 0';
+            header3Day.style.color = '#1976d2';
+            header3Day.textContent = 'סיכום - חלון 3 ימים';
+            summaryContainer3Day.appendChild(header3Day);
+
+            const header4Day = document.createElement('h4');
+            header4Day.style.textAlign = 'center';
+            header4Day.style.margin = '0 0 15px 0';
+            header4Day.style.color = '#f57c00';
+            header4Day.textContent = 'סיכום - חלון 4 ימים';
+            summaryContainer4Day.appendChild(header4Day);
+
+            const header5Day = document.createElement('h4');
+            header5Day.style.textAlign = 'center';
+            header5Day.style.margin = '0 0 15px 0';
+            header5Day.style.color = '#2e7d32';
+            header5Day.textContent = 'סיכום - חלון 5 ימים';
+            summaryContainer5Day.appendChild(header5Day);
+
+            // Add summary items
+            addSummaryItemsToContainer(summaryContainer3Day, results3Day);
+            addSummaryItemsToContainer(summaryContainer4Day, results4Day);
+            addSummaryItemsToContainer(summaryContainer5Day, results5Day);
+
+            summaryGrid.appendChild(summaryContainer3Day);
+            summaryGrid.appendChild(summaryContainer4Day);
+            summaryGrid.appendChild(summaryContainer5Day);
+        }
+
+        function displayAveragesAcrossWindows(results3Day, results4Day, results5Day, selectedDate) {
+            const summaryGrid = document.getElementById('summaryGrid');
+            
+            // Create averages container
+            const averagesContainer = document.createElement('div');
+            averagesContainer.style.gridColumn = '1 / -1';
+            averagesContainer.style.backgroundColor = '#f5f5f5';
+            averagesContainer.style.padding = '20px';
+            averagesContainer.style.borderRadius = '8px';
+            averagesContainer.style.margin = '10px';
+            averagesContainer.style.border = '2px solid #4CAF50';
+
+            // Add header
+            const header = document.createElement('h4');
+            header.style.textAlign = 'center';
+            header.style.margin = '0 0 20px 0';
+            header.style.color = '#2e7d32';
+            header.style.fontSize = '18px';
+            header.textContent = 'ממוצע בין כל החלונות';
+            averagesContainer.appendChild(header);
+
+            // Calculate averages for each metric
+            const averages = {
+                calories: (results3Day.remaining.calories + results4Day.remaining.calories + results5Day.remaining.calories) / 3,
+                netCalories: (results3Day.remaining.netCalories + results4Day.remaining.netCalories + results5Day.remaining.netCalories) / 3,
+                protein: (results3Day.remaining.protein + results4Day.remaining.protein + results5Day.remaining.protein) / 3,
+                netCarbs: (results3Day.remaining.netCarbs + results4Day.remaining.netCarbs + results5Day.remaining.netCarbs) / 3,
+                fat: (results3Day.remaining.fat + results4Day.remaining.fat + results5Day.remaining.fat) / 3
+            };
+
+            // Create grid for average items
+            const averagesGrid = document.createElement('div');
+            averagesGrid.style.display = 'grid';
+            averagesGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(200px, 1fr))';
+            averagesGrid.style.gap = '15px';
+
+            // Add average items
+            addAverageItem(averagesGrid, 'קלוריות', averages.calories, 'קלוריות', 'עוד אפשר');
+            addAverageItem(averagesGrid, 'קלוריות נטו', averages.netCalories, 'קלוריות', 'עוד אפשר');
+            addAverageItem(averagesGrid, 'חלבון', averages.protein, 'גרם', 'עוד צריך');
+            addAverageItem(averagesGrid, 'פחמימות נטו', averages.netCarbs, 'גרם', 'עוד אפשר');
+            addAverageItem(averagesGrid, 'שומן', averages.fat, 'גרם', 'עוד אפשר');
+
+            averagesContainer.appendChild(averagesGrid);
+            summaryGrid.appendChild(averagesContainer);
+        }
+
+        function addAverageItem(container, title, value, unit, description) {
+            const item = document.createElement('div');
+            item.style.backgroundColor = 'white';
+            item.style.padding = '15px';
+            item.style.borderRadius = '8px';
+            item.style.textAlign = 'center';
+            item.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+            
+            item.innerHTML = `
+                <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">${title}</h4>
+                <div style="font-size: 24px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">
+                    ${value.toFixed(0)} ${unit}
+                </div>
+                <div style="font-size: 12px; color: #666;">${description}</div>
+            `;
+            
+            container.appendChild(item);
+        }
+
+        function addSummaryItemsToContainer(container, results) {
+            const { totals, targets, remaining } = results;
+
+            // Calories summary
+            const caloriesSummary = document.createElement('div');
+            caloriesSummary.className = 'summary-item';
+            const caloriesStatus = totals.calories <= targets.calories ? 'good' : 'danger';
+            caloriesSummary.innerHTML = `
+                <h4>קלוריות</h4>
+                <div class="summary-value ${caloriesStatus}">
+                    ${remaining.calories.toFixed(0)} קלוריות
+                </div>
+                <div style="font-size: 12px; color: #666;">עוד אפשר</div>
+            `;
+            container.appendChild(caloriesSummary);
+
+            // Net Calories summary
+            const netCaloriesSummary = document.createElement('div');
+            netCaloriesSummary.className = 'summary-item';
+            const netCaloriesStatus = totals.netCalories <= targets.calories ? 'good' : 'danger';
+            netCaloriesSummary.innerHTML = `
+                <h4>קלוריות נטו</h4>
+                <div class="summary-value ${netCaloriesStatus}">
+                    ${remaining.netCalories.toFixed(0)} קלוריות
+                </div>
+                <div style="font-size: 12px; color: #666;">עוד אפשר</div>
+            `;
+            container.appendChild(netCaloriesSummary);
+
+            // Protein summary
+            const proteinSummary = document.createElement('div');
+            proteinSummary.className = 'summary-item';
+            const proteinStatus = totals.protein >= targets.protein ? 'good' : 'warning';
+            proteinSummary.innerHTML = `
+                <h4>חלבון</h4>
+                <div class="summary-value ${proteinStatus}">
+                    ${remaining.protein.toFixed(0)} גרם
+                </div>
+                <div style="font-size: 12px; color: #666;">עוד צריך</div>
+            `;
+            container.appendChild(proteinSummary);
+
+            // Net Carbs summary
+            const netCarbsSummary = document.createElement('div');
+            netCarbsSummary.className = 'summary-item';
+            const netCarbsStatus = totals.netCarbs <= targets.netCarbs ? 'good' : 'danger';
+            netCarbsSummary.innerHTML = `
+                <h4>פחמימות נטו</h4>
+                <div class="summary-value ${netCarbsStatus}">
+                    ${remaining.netCarbs.toFixed(0)} גרם
+                </div>
+                <div style="font-size: 12px; color: #666;">עוד אפשר</div>
+            `;
+            container.appendChild(netCarbsSummary);
+
+            // Fat summary
+            const fatSummary = document.createElement('div');
+            fatSummary.className = 'summary-item';
+            const fatStatus = totals.fat <= targets.fat ? 'good' : 'danger';
+            fatSummary.innerHTML = `
+                <h4>שומן</h4>
+                <div class="summary-value ${fatStatus}">
+                    ${remaining.fat.toFixed(0)} גרם
+                </div>
+                <div style="font-size: 12px; color: #666;">עוד אפשר</div>
+            `;
+            container.appendChild(fatSummary);
+        }
+
+        function createProgressItem(name, consumed, target, remaining, percentage, unit, isMinimum) {
+            const item = document.createElement('div');
+            item.className = 'progress-item';
+
+            const statusClass = getStatusClass(percentage, isMinimum);
+            const statusText = getStatusText(percentage, isMinimum);
+
+            item.innerHTML = `
+                <h4>${name}</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill ${statusClass}" style="width: ${Math.min(100, percentage)}%"></div>
+                </div>
+                <div class="progress-text">
+                    <span>נצרך: ${consumed.toFixed(1)} ${unit}</span>
+                    <span>יעד: ${target.toFixed(1)} ${unit}</span>
+                </div>
+                <div class="remaining ${remaining > 0 ? 'positive' : 'negative'}">
+                    ${isMinimum ? 'עוד צריך: ' : 'עוד אפשר: '}${Math.abs(remaining).toFixed(1)} ${unit}
+                </div>
+                <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                    ${statusText}
+                </div>
+            `;
+
+            return item;
+        }
+
+        function getStatusClass(percentage, isMinimum) {
+            if (isMinimum) {
+                return percentage >= 100 ? 'good' : percentage >= 80 ? 'warning' : 'danger';
+            } else {
+                return percentage <= 80 ? 'good' : percentage <= 100 ? 'warning' : 'danger';
+            }
+        }
+
+        function getStatusText(percentage, isMinimum) {
+            if (isMinimum) {
+                if (percentage >= 100) return '✅ הושג היעד!';
+                if (percentage >= 80) return '⚠️ קרוב ליעד';
+                return '❌ רחוק מהיעד';
+            } else {
+                if (percentage <= 80) return '✅ בטווח בטוח';
+                if (percentage <= 100) return '⚠️ קרוב לגבול';
+                return '❌ חריגה מהגבול';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
