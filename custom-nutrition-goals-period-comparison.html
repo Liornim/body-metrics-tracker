@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>השוואת יעדי תזונה מותאמים אישית - תקופות עוקבות</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .goals-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .goal-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .goal-input label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .goal-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .goal-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .goal-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .goal-input-group select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        
+        .goal-input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .secondary-button {
+            background: #95a5a6;
+        }
+        
+        .secondary-button:hover {
+            background: #7f8c8d;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .comparison-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .comparison-table tr:hover {
+            background: #e3f2fd;
+        }
+        
+        .goal-name {
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: right;
+            min-width: 120px;
+        }
+        
+        .period-cell {
+            min-width: 100px;
+            vertical-align: top;
+        }
+        
+        .period-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .success-rate {
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .success-rate.high {
+            color: #4CAF50;
+        }
+        
+        .success-rate.medium {
+            color: #FF9800;
+        }
+        
+        .success-rate.low {
+            color: #f44336;
+        }
+        
+        .count-info {
+            font-size: 0.8rem;
+            color: #666;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .change-indicator {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        
+        .change-indicator.improved {
+            color: #4CAF50;
+        }
+        
+        .change-indicator.declined {
+            color: #f44336;
+        }
+        
+        .change-indicator.same {
+            color: #666;
+        }
+        
+        .summary-stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-table {
+                font-size: 11px;
+            }
+            
+            .comparison-table th,
+            .comparison-table td {
+                padding: 8px 4px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .goals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 השוואת יעדי תזונה מותאמים אישית - תקופות עוקבות</h1>
+            <p>השוואה בין תקופות של 3 ימים עוקבים: התקופה האחרונה מול התקופה הקודמת</p>
+        </div>
+        
+        <!-- Goals Configuration Section -->
+        <div class="goals-section">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">⚙️ הגדרת יעדים</h2>
+            <div class="goals-grid">
+                <div class="goal-input">
+                    <label>🚶 צעדים</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="stepsValue" value="10000" min="0" step="100">
+                        <select id="stepsType">
+                            <option value="min">מינימום</option>
+                            <option value="max">מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="goal-input">
+                    <label>🔥 קלוריות גולמיות</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="caloriesValue" value="2000" min="0" step="10">
+                        <select id="caloriesType">
+                            <option value="min">מינימום</option>
+                            <option value="max" selected>מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="goal-input">
+                    <label>⚡ קלוריות נטו</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="netCaloriesValue" value="1450" min="0" step="10">
+                        <select id="netCaloriesType">
+                            <option value="min">מינימום</option>
+                            <option value="max" selected>מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="goal-input">
+                    <label>💪 חלבון (גרם)</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="proteinValue" value="170" min="0" step="1">
+                        <select id="proteinType">
+                            <option value="min" selected>מינימום</option>
+                            <option value="max">מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="goal-input">
+                    <label>🥑 שומן (גרם)</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="fatValue" value="40" min="0" step="1">
+                        <select id="fatType">
+                            <option value="min">מינימום</option>
+                            <option value="max" selected>מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="goal-input">
+                    <label>🍞 פחמימות נטו (גרם)</label>
+                    <div class="goal-input-group">
+                        <input type="number" id="netCarbsValue" value="125" min="0" step="1">
+                        <select id="netCarbsType">
+                            <option value="min">מינימום</option>
+                            <option value="max" selected>מקסימום</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button onclick="updateGoals()">עדכן יעדים</button>
+                <button onclick="loadNutritionData()" class="secondary-button">טען נתונים</button>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            🔄 טוען נתונים...
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            ❌ שגיאה בטעינת הנתונים. 
+            <button onclick="loadNutritionData()" style="margin-left: 10px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                נסה שוב
+            </button>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div id="summaryStats" class="summary-stats"></div>
+            <table class="comparison-table" id="comparisonTable">
+                <thead>
+                    <tr>
+                        <th>יעד</th>
+                        <th>תקופה קודמת<br>(3 ימים)</th>
+                        <th>תקופה אחרונה<br>(3 ימים)</th>
+                        <th>שינוי</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Table content will be generated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Custom goals configuration with default values
+        let CUSTOM_GOALS = {
+            steps: { value: 10000, type: 'min' },
+            calories: { value: 2000, type: 'max' },
+            netCalories: { value: 1450, type: 'max' },
+            protein: { value: 170, type: 'min' },
+            fat: { value: 40, type: 'max' },
+            netCarbs: { value: 125, type: 'max' }
+        };
+        
+        // Goal names for display
+        const goalNames = {
+            steps: 'צעדים',
+            calories: 'קלוריות גולמיות',
+            netCalories: 'קלוריות נטו',
+            protein: 'חלבון',
+            fat: 'שומן',
+            netCarbs: 'פחמימות נטו'
+        };
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNutritionData();
+            
+            // Set timeout to show error if no response after 5 seconds
+            setTimeout(function() {
+                if (document.getElementById('loading').style.display !== 'none') {
+                    console.error('Timeout waiting for data');
+                    showError();
+                }
+            }, 5000);
+        });
+        
+        // Update goals from form inputs
+        function updateGoals() {
+            CUSTOM_GOALS = {
+                steps: { 
+                    value: parseInt(document.getElementById('stepsValue').value), 
+                    type: document.getElementById('stepsType').value 
+                },
+                calories: { 
+                    value: parseInt(document.getElementById('caloriesValue').value), 
+                    type: document.getElementById('caloriesType').value 
+                },
+                netCalories: { 
+                    value: parseInt(document.getElementById('netCaloriesValue').value), 
+                    type: document.getElementById('netCaloriesType').value 
+                },
+                protein: { 
+                    value: parseInt(document.getElementById('proteinValue').value), 
+                    type: document.getElementById('proteinType').value 
+                },
+                fat: { 
+                    value: parseInt(document.getElementById('fatValue').value), 
+                    type: document.getElementById('fatType').value 
+                },
+                netCarbs: { 
+                    value: parseInt(document.getElementById('netCarbsValue').value), 
+                    type: document.getElementById('netCarbsType').value 
+                }
+            };
+            
+            console.log('Goals updated:', CUSTOM_GOALS);
+            
+            // Reload data with new goals
+            loadNutritionData();
+        }
+        
+        // Load nutrition data from Google Sheets
+        function loadNutritionData() {
+            console.log('Loading nutrition data...');
+            
+            try {
+                fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Fetch successful:', data);
+                        handleNutritionData(data);
+                    })
+                    .catch(error => {
+                        console.error('Fetch failed:', error);
+                        showError();
+                    });
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError();
+            }
+        }
+        
+        // Handle nutrition data response
+        function handleNutritionData(response) {
+            console.log('Received data:', response);
+            console.log('Response success:', response?.success);
+            console.log('Response data:', response?.data);
+            console.log('Data length:', response?.data?.length);
+            console.log('First data row:', response?.data?.[0]);
+            console.log('Data structure:', JSON.stringify(response?.data?.[0]));
+            
+            if (response && response.success && response.data) {
+                displayPeriodComparison(response.data);
+            } else {
+                console.error('Invalid response:', response);
+                showError();
+            }
+        }
+        
+        // Display period comparison
+        function displayPeriodComparison(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            
+            // Calculate success rates for consecutive 3-day periods
+            const periods = calculateConsecutivePeriods(data);
+            
+            // Display summary statistics
+            displaySummaryStats(periods);
+            
+            // Display comparison table
+            displayComparisonTable(periods);
+        }
+        
+        // Calculate consecutive 3-day periods
+        function calculateConsecutivePeriods(data) {
+            if (!data || data.length < 6) {
+                console.error('Not enough data for comparison (need at least 6 days)');
+                return null;
+            }
+            
+            // Sort data by date (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = new Date(a[0]);
+                const dateB = new Date(b[0]);
+                return dateB - dateA;
+            });
+            
+            // Get last 6 days (3 for each period)
+            const last6Days = sortedData.slice(0, 6);
+            
+            // Validate that we have enough valid data
+            const validDays = last6Days.filter(row => row && row.length >= 7);
+            if (validDays.length < 6) {
+                console.error('Not enough valid data rows (need 6 days with 7+ columns)');
+                return null;
+            }
+            
+            // Split into two 3-day periods
+            const currentPeriod = validDays.slice(0, 3); // Most recent 3 days
+            const previousPeriod = validDays.slice(3, 6); // Previous 3 days
+            
+            console.log('Current period (last 3 days):', currentPeriod.map(row => row[0]));
+            console.log('Previous period (3 days before):', previousPeriod.map(row => row[0]));
+            
+            // Calculate success rates for each period
+            const currentRates = calculatePeriodSuccessRates(currentPeriod);
+            const previousRates = calculatePeriodSuccessRates(previousPeriod);
+            
+            if (!currentRates || !previousRates) {
+                console.error('Failed to calculate success rates');
+                return null;
+            }
+            
+            return {
+                currentPeriod: {
+                    dates: currentPeriod.map(row => row[0]),
+                    rates: currentRates
+                },
+                previousPeriod: {
+                    dates: previousPeriod.map(row => row[0]),
+                    rates: previousRates
+                }
+            };
+        }
+        
+        // Calculate success rates for a 3-day period
+        function calculatePeriodSuccessRates(periodData) {
+            if (!periodData || periodData.length === 0) return null;
+            
+            console.log(`Calculating success rates for ${periodData.length} days`);
+            
+            const successCounts = {};
+            const failureCounts = {};
+            
+            // Initialize counters
+            Object.keys(goalNames).forEach(goal => {
+                successCounts[goal] = 0;
+                failureCounts[goal] = 0;
+            });
+            
+            // Count successes and failures for each day
+            periodData.forEach((row, index) => {
+                console.log(`Processing day ${index + 1}: ${row[0]}`);
+                const success = calculateGoalSuccess(row);
+                Object.keys(success).forEach(key => {
+                    if (success[key] === "✅") {
+                        successCounts[key]++;
+                        console.log(`  ${key}: SUCCESS (${successCounts[key]})`);
+                    } else {
+                        failureCounts[key]++;
+                        console.log(`  ${key}: FAILURE (${failureCounts[key]})`);
+                    }
+                });
+            });
+            
+            // Calculate success rates
+            const rates = {};
+            Object.keys(successCounts).forEach(key => {
+                const total = successCounts[key] + failureCounts[key];
+                rates[key] = total > 0 ? Math.round((successCounts[key] / total) * 100) : 0;
+                console.log(`Final rate for ${key}: ${successCounts[key]}/${total} = ${rates[key]}%`);
+            });
+            
+            console.log('Final success counts:', successCounts);
+            console.log('Final failure counts:', failureCounts);
+            console.log('Final rates:', rates);
+            
+            return {
+                rates: rates,
+                successCounts: successCounts,
+                failureCounts: failureCounts
+            };
+        }
+        
+        // Calculate goal success for a single day
+        function calculateGoalSuccess(row) {
+            // Validate row data
+            if (!row || row.length < 7) {
+                console.error('Invalid row data:', row);
+                return {
+                    steps: false,
+                    calories: false,
+                    netCalories: false,
+                    protein: false,
+                    fat: false,
+                    netCarbs: false
+                };
+            }
+            
+            const [date, calories, fat, carbs, protein, fiber, steps] = row;
+            
+            // Validate numeric values
+            const numCalories = parseFloat(calories) || 0;
+            const numSteps = parseFloat(steps) || 0;
+            const numFat = parseFloat(fat) || 0;
+            const numCarbs = parseFloat(carbs) || 0;
+            const numProtein = parseFloat(protein) || 0;
+            const numFiber = parseFloat(fiber) || 0;
+            
+            console.log(`Processing row: ${date}`);
+            console.log(`Values: calories=${numCalories}, steps=${numSteps}, protein=${numProtein}, fat=${numFat}, carbs=${numCarbs}, fiber=${numFiber}`);
+            
+            // Calculate derived values
+            const netCalories = numCalories - (numSteps / 25);
+            const netCarbs = numCarbs - numFiber;
+            
+            console.log(`Calculated: netCalories=${netCalories}, netCarbs=${netCarbs}`);
+            
+            const result = {
+                steps: checkGoal(numSteps, CUSTOM_GOALS.steps.value, CUSTOM_GOALS.steps.type) ? "✅" : "🟥",
+                calories: checkGoal(numCalories, CUSTOM_GOALS.calories.value, CUSTOM_GOALS.calories.type) ? "✅" : "🟥",
+                netCalories: checkGoal(netCalories, CUSTOM_GOALS.netCalories.value, CUSTOM_GOALS.netCalories.type) ? "✅" : "🟥",
+                protein: checkGoal(numProtein, CUSTOM_GOALS.protein.value, CUSTOM_GOALS.protein.type) ? "✅" : "🟥",
+                fat: checkGoal(numFat, CUSTOM_GOALS.fat.value, CUSTOM_GOALS.fat.type) ? "✅" : "🟥",
+                netCarbs: checkGoal(netCarbs, CUSTOM_GOALS.netCarbs.value, CUSTOM_GOALS.netCarbs.type) ? "✅" : "🟥"
+            };
+            
+            console.log(`Success results:`, result);
+            return result;
+        }
+        
+        // Check if a value meets the goal criteria
+        function checkGoal(value, target, type) {
+            if (type === 'min') {
+                return value >= target;
+            } else {
+                return value <= target;
+            }
+        }
+        
+        // Get success rate class
+        function getSuccessClass(rate) {
+            if (rate >= 80) return 'high';
+            if (rate >= 60) return 'medium';
+            return 'low';
+        }
+        
+        // Get change indicator
+        function getChangeIndicator(current, previous) {
+            const change = parseFloat(current) - parseFloat(previous);
+            if (change > 0) return { class: 'improved', text: `+${change.toFixed(1)}%` };
+            if (change < 0) return { class: 'declined', text: `${change.toFixed(1)}%` };
+            return { class: 'same', text: '0.0%' };
+        }
+        
+        // Display summary statistics
+        function displaySummaryStats(periods) {
+            if (!periods || !periods.currentPeriod || !periods.previousPeriod) {
+                console.error('Invalid periods data for summary');
+                return;
+            }
+            
+            const summaryStats = document.getElementById('summaryStats');
+            
+            const currentAvg = (
+                Object.values(periods.currentPeriod.rates.rates).reduce((sum, rate) => sum + rate, 0) / 
+                Object.keys(periods.currentPeriod.rates.rates).length
+            ).toFixed(1);
+            
+            const previousAvg = (
+                Object.values(periods.previousPeriod.rates.rates).reduce((sum, rate) => sum + rate, 0) / 
+                Object.keys(periods.previousPeriod.rates.rates).length
+            ).toFixed(1);
+            
+            const change = getChangeIndicator(currentAvg, previousAvg);
+            
+            summaryStats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${periods.previousPeriod.dates[2]} - ${periods.previousPeriod.dates[0]}</div>
+                    <div class="stat-label">תקופה קודמת</div>
+                    <div class="stat-number ${getSuccessClass(previousAvg)}">${previousAvg}%</div>
+                    <div class="stat-label">הצלחה ממוצעת</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${periods.currentPeriod.dates[2]} - ${periods.currentPeriod.dates[0]}</div>
+                    <div class="stat-label">תקופה אחרונה</div>
+                    <div class="stat-number ${getSuccessClass(currentAvg)}">${currentAvg}%</div>
+                    <div class="stat-label">הצלחה ממוצעת</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number ${change.class}">${change.text}</div>
+                    <div class="stat-label">שינוי ממוצע</div>
+                </div>
+            `;
+        }
+        
+        // Display comparison table
+        function displayComparisonTable(periods) {
+            if (!periods) {
+                console.error('No periods data for table');
+                return;
+            }
+            
+            console.log('Displaying comparison table with periods:', periods);
+            console.log('Current period rates:', periods.currentPeriod?.rates);
+            console.log('Previous period rates:', periods.previousPeriod?.rates);
+            
+            const tableBody = document.getElementById('tableBody');
+            
+            let tableHTML = '';
+            
+            Object.keys(goalNames).forEach(goal => {
+                console.log(`Processing goal: ${goal}`);
+                
+                const currentRate = periods.currentPeriod?.rates?.rates?.[goal] || 0;
+                const previousRate = periods.previousPeriod?.rates?.rates?.[goal] || 0;
+                
+                console.log(`Goal ${goal}: currentRate=${currentRate}, previousRate=${previousRate}`);
+                
+                const change = getChangeIndicator(currentRate, previousRate);
+                
+                const currentSuccess = periods.currentPeriod?.rates?.successCounts?.[goal] || 0;
+                const currentTotal = currentSuccess + (periods.currentPeriod?.rates?.failureCounts?.[goal] || 0);
+                
+                const previousSuccess = periods.previousPeriod?.rates?.successCounts?.[goal] || 0;
+                const previousTotal = previousSuccess + (periods.previousPeriod?.rates?.failureCounts?.[goal] || 0);
+                
+                console.log(`Goal ${goal}: current=${currentRate}%, previous=${previousRate}%`);
+                
+                tableHTML += `
+                    <tr>
+                        <td class="goal-name">${goalNames[goal]}</td>
+                        <td class="period-cell">
+                            <div class="period-header">${periods.previousPeriod?.dates?.[2]} - ${periods.previousPeriod?.dates?.[0]}</div>
+                            <div class="success-rate ${getSuccessClass(previousRate)}">${previousRate}%</div>
+                            <div class="count-info">${previousSuccess}/${previousTotal}</div>
+                        </td>
+                        <td class="period-cell">
+                            <div class="period-header">${periods.currentPeriod?.dates?.[2]} - ${periods.currentPeriod?.dates?.[0]}</div>
+                            <div class="success-rate ${getSuccessClass(currentRate)}">${currentRate}%</div>
+                            <div class="count-info">${currentSuccess}/${currentTotal}</div>
+                        </td>
+                        <td class="period-cell">
+                            <div class="change-indicator ${change.class}">${change.text}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHTML;
+        }
+        
+        // Show error message
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
