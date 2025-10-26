@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סקירת יעדי תזונה מותאמים אישית</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .goals-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .goals-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .goal-input {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .goal-input h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .goal-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .goal-input input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .goal-input input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        
+        .goal-input select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .goal-input select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .overview-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .time-window-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .time-window-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        .goals-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            table-layout: fixed;
+        }
+        
+        .goals-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .goals-table td {
+            padding: 6px 4px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        
+        .goals-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .goals-table tr:hover {
+            background: #e3f2fd;
+        }
+        
+        .goal-name {
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: right;
+        }
+        
+        .window-cell {
+            min-width: 80px;
+            vertical-align: top;
+        }
+        
+        .success-rate {
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .success-rate.high {
+            color: #4CAF50;
+        }
+        
+        .success-rate.medium {
+            color: #FF9800;
+        }
+        
+        .success-rate.low {
+            color: #f44336;
+        }
+        
+        .count-info {
+            font-size: 0.7rem;
+            color: #666;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .goals-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .goals-table {
+                font-size: 10px;
+            }
+            
+            .goals-table th,
+            .goals-table td {
+                padding: 4px 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 סקירת יעדי תזונה מותאמים אישית</h1>
+            <p>הגדר את היעדים שלך וקבל ניתוח מקיף של הצלחה</p>
+        </div>
+        
+        <div class="content">
+            <div class="goals-section">
+                <h2>🎯 הגדרת יעדים</h2>
+                <div class="goals-grid">
+                    <div class="goal-input">
+                        <h3>צעדים</h3>
+                        <label for="stepsGoal">יעד יומי:</label>
+                        <input type="number" id="stepsGoal" value="10000" min="0">
+                        <label for="stepsType">סוג יעד:</label>
+                        <select id="stepsType">
+                            <option value="min">לפחות (מינימום)</option>
+                            <option value="max">לכל היותר (מקסימום)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="goal-input">
+                        <h3>קלוריות גולמיות</h3>
+                        <label for="caloriesGoal">יעד יומי:</label>
+                        <input type="number" id="caloriesGoal" value="2000" min="0">
+                        <label for="caloriesType">סוג יעד:</label>
+                        <select id="caloriesType">
+                            <option value="max">לכל היותר (מקסימום)</option>
+                            <option value="min">לפחות (מינימום)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="goal-input">
+                        <h3>קלוריות נטו</h3>
+                        <label for="netCaloriesGoal">יעד יומי:</label>
+                        <input type="number" id="netCaloriesGoal" value="1450" min="0">
+                        <label for="netCaloriesType">סוג יעד:</label>
+                        <select id="netCaloriesType">
+                            <option value="max">לכל היותר (מקסימום)</option>
+                            <option value="min">לפחות (מינימום)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="goal-input">
+                        <h3>חלבון</h3>
+                        <label for="proteinGoal">יעד יומי (גרם):</label>
+                        <input type="number" id="proteinGoal" value="170" min="0">
+                        <label for="proteinType">סוג יעד:</label>
+                        <select id="proteinType">
+                            <option value="min">לפחות (מינימום)</option>
+                            <option value="max">לכל היותר (מקסימום)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="goal-input">
+                        <h3>שומן</h3>
+                        <label for="fatGoal">יעד יומי (גרם):</label>
+                        <input type="number" id="fatGoal" value="40" min="0">
+                        <label for="fatType">סוג יעד:</label>
+                        <select id="fatType">
+                            <option value="max">לכל היותר (מקסימום)</option>
+                            <option value="min">לפחות (מינימום)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="goal-input">
+                        <h3>פחמימות נטו</h3>
+                        <label for="netCarbsGoal">יעד יומי (גרם):</label>
+                        <input type="number" id="netCarbsGoal" value="125" min="0">
+                        <label for="netCarbsType">סוג יעד:</label>
+                        <select id="netCarbsType">
+                            <option value="max">לכל היותר (מקסימום)</option>
+                            <option value="min">לפחות (מינימום)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" onclick="updateGoals()">🔄 עדכן יעדים</button>
+                    <button class="btn btn-secondary" onclick="loadData()">📊 טען נתונים</button>
+                </div>
+            </div>
+            
+            <div class="overview-sections" id="overviewSections">
+                <!-- All time windows will be displayed here -->
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                טוען נתונים ומחשב סטטיסטיקות...
+            </div>
+            
+            <div id="noData" class="no-data" style="display: none;">
+                לחץ על "טען נתונים" כדי לטעון את הנתונים
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Custom goals object
+        let CUSTOM_GOALS = {
+            steps: { value: 10000, type: 'min' },
+            calories: { value: 2000, type: 'max' },
+            netCalories: { value: 1450, type: 'max' },
+            protein: { value: 170, type: 'min' },
+            fat: { value: 40, type: 'max' },
+            netCarbs: { value: 125, type: 'max' }
+        };
+        
+        let currentData = [];
+        
+        // Update goals from form inputs
+        function updateGoals() {
+            CUSTOM_GOALS = {
+                steps: { 
+                    value: parseInt(document.getElementById('stepsGoal').value) || 0, 
+                    type: document.getElementById('stepsType').value 
+                },
+                calories: { 
+                    value: parseInt(document.getElementById('caloriesGoal').value) || 0, 
+                    type: document.getElementById('caloriesType').value 
+                },
+                netCalories: { 
+                    value: parseInt(document.getElementById('netCaloriesGoal').value) || 0, 
+                    type: document.getElementById('netCaloriesType').value 
+                },
+                protein: { 
+                    value: parseInt(document.getElementById('proteinGoal').value) || 0, 
+                    type: document.getElementById('proteinType').value 
+                },
+                fat: { 
+                    value: parseInt(document.getElementById('fatGoal').value) || 0, 
+                    type: document.getElementById('fatType').value 
+                },
+                netCarbs: { 
+                    value: parseInt(document.getElementById('netCarbsGoal').value) || 0, 
+                    type: document.getElementById('netCarbsType').value 
+                }
+            };
+            
+            // If data is already loaded, refresh the display
+            if (currentData.length > 0) {
+                displayAllWindows(currentData);
+            }
+            
+            alert('יעדים עודכנו בהצלחה!');
+        }
+        
+        // Status functions based on goal type
+        function checkGoalSuccess(value, goal) {
+            if (goal.type === 'min') {
+                return value >= goal.value;
+            } else {
+                return value <= goal.value;
+            }
+        }
+        
+        // Calculate goal success for a data point
+        function calculateGoalSuccess(row) {
+            const calories = parseFloat(row[1]) || 0;
+            const steps = parseFloat(row[6]) || 0;
+            const protein = parseFloat(row[4]) || 0;
+            const fat = parseFloat(row[2]) || 0;
+            const carbs = parseFloat(row[3]) || 0;
+            const fiber = parseFloat(row[5]) || 0;
+            
+            const netCarbs = carbs - fiber;
+            const netCalories = calories - (steps / 25);
+            
+            return {
+                steps: checkGoalSuccess(steps, CUSTOM_GOALS.steps),
+                calories: checkGoalSuccess(calories, CUSTOM_GOALS.calories),
+                netCalories: checkGoalSuccess(netCalories, CUSTOM_GOALS.netCalories),
+                protein: checkGoalSuccess(protein, CUSTOM_GOALS.protein),
+                fat: checkGoalSuccess(fat, CUSTOM_GOALS.fat),
+                netCarbs: checkGoalSuccess(netCarbs, CUSTOM_GOALS.netCarbs)
+            };
+        }
+        
+        // Get data for selected time window
+        function getWindowData(data, window) {
+            if (!data || data.length === 0) return [];
+            
+            // Sort data by date (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = new Date(a[0]);
+                const dateB = new Date(b[0]);
+                return dateB - dateA; // Newest first
+            });
+            
+            switch (window) {
+                case '3days':
+                    return sortedData.slice(0, 3); // Take first 3 entries (most recent)
+                case 'week':
+                    return sortedData.slice(0, 7); // Take first 7 entries (most recent)
+                case 'month':
+                    return sortedData.slice(0, 30); // Take first 30 entries (most recent)
+                case 'all':
+                default:
+                    return sortedData;
+            }
+        }
+        
+        // Calculate success rates for window data
+        function calculateSuccessRates(windowData) {
+            if (windowData.length === 0) return null;
+            
+            const successCounts = {
+                steps: 0,
+                calories: 0,
+                netCalories: 0,
+                protein: 0,
+                fat: 0,
+                netCarbs: 0
+            };
+            
+            const failureCounts = {
+                steps: 0,
+                calories: 0,
+                netCalories: 0,
+                protein: 0,
+                fat: 0,
+                netCarbs: 0
+            };
+            
+            windowData.forEach(row => {
+                const success = calculateGoalSuccess(row);
+                Object.keys(success).forEach(key => {
+                    if (success[key]) {
+                        successCounts[key]++;
+                    } else {
+                        failureCounts[key]++;
+                    }
+                });
+            });
+            
+            const rates = {};
+            Object.keys(successCounts).forEach(key => {
+                const total = successCounts[key] + failureCounts[key];
+                rates[key] = total > 0 ? Math.round((successCounts[key] / total) * 100) : 0;
+            });
+            
+            return {
+                totalDays: windowData.length,
+                rates: rates,
+                successCounts: successCounts,
+                failureCounts: failureCounts
+            };
+        }
+        
+        // Get success rate class
+        function getSuccessClass(rate) {
+            if (rate >= 80) return 'high';
+            if (rate >= 60) return 'medium';
+            return 'low';
+        }
+        
+        // Display all time windows
+        function displayAllWindows(data) {
+            const timeWindows = [
+                { key: '3days', title: '3 ימים' },
+                { key: 'week', title: 'שבוע' },
+                { key: 'month', title: 'חודש' },
+                { key: 'all', title: 'כל הזמן' }
+            ];
+            
+            const goalNames = {
+                steps: 'צעדים',
+                calories: 'קלוריות גולמיות',
+                netCalories: 'קלוריות נטו',
+                protein: 'חלבון',
+                fat: 'שומן',
+                netCarbs: 'פחמימות נטו'
+            };
+            
+            // Calculate success rates for all windows
+            const allSuccessRates = {};
+            timeWindows.forEach(window => {
+                const windowData = getWindowData(data, window.key);
+                allSuccessRates[window.key] = calculateSuccessRates(windowData);
+            });
+            
+            const overviewSections = document.getElementById('overviewSections');
+            overviewSections.innerHTML = '';
+            
+            // Create one section with table
+            const section = document.createElement('div');
+            section.className = 'time-window-section';
+            
+            let tableHTML = `
+                <h2>📊 סקירת יעדי תזונה מותאמים אישית</h2>
+                <table class="goals-table">
+                    <thead>
+                        <tr>
+                            <th>יעד</th>
+                            <th>3 ימים</th>
+                            <th>שבוע</th>
+                            <th>חודש</th>
+                            <th>כל הזמן</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            Object.keys(goalNames).forEach(goal => {
+                tableHTML += `<tr><td class="goal-name">${goalNames[goal]}</td>`;
+                
+                timeWindows.forEach((window, index) => {
+                    const successRates = allSuccessRates[window.key];
+                    if (!successRates) {
+                        tableHTML += `<td class="window-cell">-</td>`;
+                    } else {
+                        const rate = successRates.rates[goal] || 0;
+                        const successClass = getSuccessClass(rate);
+                        const successCount = successRates.successCounts[goal] || 0;
+                        const failureCount = successRates.failureCounts[goal] || 0;
+                        const totalCount = successCount + failureCount;
+                        
+                        tableHTML += `
+                            <td class="window-cell">
+                                <div class="success-rate ${successClass}">${rate}%</div>
+                                <div class="count-info">${successCount}/${totalCount}</div>
+                            </td>
+                        `;
+                    }
+                });
+                
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            section.innerHTML = tableHTML;
+            overviewSections.appendChild(section);
+        }
+        
+        // Load data from Google Sheets
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    currentData = data.data;
+                    displayAllWindows(currentData);
+                    document.getElementById('overviewSections').style.display = 'block';
+                    document.getElementById('noData').style.display = 'none';
+                } else {
+                    document.getElementById('overviewSections').style.display = 'none';
+                    document.getElementById('noData').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('שגיאה בטעינת הנתונים');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+    </script>
+</body>
+</html>
