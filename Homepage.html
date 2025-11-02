@@ -152,6 +152,32 @@
             </div>
         </div>
         
+        <div class="status-bar" style="margin-top: 20px;">
+            <div class="status-item">
+                <div class="status-label">מקסימום קלוריות להיום יעד</div>
+                <div class="status-value" id="maxCaloriesTodayTarget">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">מקסימום קלוריות להיום TDEE</div>
+                <div class="status-value" id="maxCaloriesTodayTdee">--</div>
+            </div>
+        </div>
+        
+        <div class="status-bar" style="margin-top: 20px;">
+            <div class="status-item">
+                <div class="status-label">חלבון מינימלי</div>
+                <div class="status-value" id="maxProteinGap">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">שומן מקסימלי</div>
+                <div class="status-value" id="minFatGap">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">פחמימות נטו מקסימום</div>
+                <div class="status-value" id="minCarbsGap">--</div>
+            </div>
+        </div>
+        
         <div class="apps-grid">
             <!-- Body Metrics Tracker -->
             <div class="app-card">
@@ -260,28 +286,236 @@
     </div>
 
     <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Default TDEE and weekly deficit target (same as calorie-deficit-analysis-with-target-minus-one-table.html)
+        const TDEE = 2400;
+        const WEEKLY_DEFICIT_TARGET = 1050;
+        const WINDOWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        
+        // Default values for macro calculator (same as macro-comparison-minus-one-table.html)
+        const CALORIE_TARGET = 2250;
+        const PROTEIN_GRAMS = 160;
+        const FAT_PERCENT = 25;
+        
+        // Calculate target gap for a specific window (same logic as calorie-deficit-analysis-with-target-minus-one-table.html)
+        function calculateWindowGap(nutritionData, windowDays) {
+            // Check if first row is header
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            // Need at least: (windowDays - 1) data rows, plus 1 if header exists
+            const minRequired = hasHeader ? windowDays : windowDays - 1;
+            if (!nutritionData || nutritionData.length < minRequired) {
+                return null;
+            }
+            
+            // If header exists, skip it (start from index 1), otherwise start from index 0
+            // Take the first (windowDays - 1) days from the data
+            const startIndex = hasHeader ? 1 : 0;
+            const actualData = nutritionData.slice(startIndex, startIndex + (windowDays - 1));
+            
+            let totalCalories = 0;
+            let validDays = 0;
+            
+            actualData.forEach(row => {
+                if (row && row.length >= 7) {
+                    const calories = parseFloat(row[1]) || 0;
+                    totalCalories += calories;
+                    validDays++;
+                }
+            });
+            
+            if (validDays === 0) {
+                return null;
+            }
+            
+            // Calculate TDEE for the full window
+            const windowTDEE = TDEE * windowDays;
+            
+            // Calculate calorie target for the full window
+            const windowDeficitTarget = (WEEKLY_DEFICIT_TARGET / 7) * windowDays;
+            const calorieTarget = windowTDEE - windowDeficitTarget;
+            
+            // Calculate gaps: Target - Actual
+            const calorieTargetGap = calorieTarget - totalCalories;
+            const tdeeGap = windowTDEE - totalCalories;
+            
+            return {
+                calorieTargetGap: calorieTargetGap,
+                tdeeGap: tdeeGap
+            };
+        }
+        
+        // Calculate macros for given calories (same logic as macro-comparison-minus-one-table.html)
+        function calculateMacrosForCalories(totalCalories) {
+            // Protein: fixed amount (160g)
+            const proteinGrams = PROTEIN_GRAMS;
+            const proteinCalories = proteinGrams * 4;
+            
+            // Fat: percentage of total calories (25%)
+            const fatCalories = totalCalories * (FAT_PERCENT / 100);
+            const fatGrams = fatCalories / 9;
+            
+            // Carbs: rest of the calories
+            const carbsCalories = totalCalories - proteinCalories - fatCalories;
+            const carbsGrams = carbsCalories / 4;
+            
+            return {
+                protein: proteinGrams,
+                fat: fatGrams,
+                carbs: carbsGrams
+            };
+        }
+        
+        // Calculate window actuals for macros (same logic as macro-comparison-minus-one-table.html)
+        function calculateWindowActuals(nutritionData, windowDays) {
+            // Check if first row is header
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            // Need at least: (windowDays - 1) data rows, plus 1 if header exists
+            const minRequired = hasHeader ? windowDays : windowDays - 1;
+            if (!nutritionData || nutritionData.length < minRequired) {
+                return null;
+            }
+            
+            // Take the first (windowDays - 1) days from the data
+            const startIndex = hasHeader ? 1 : 0;
+            const actualData = nutritionData.slice(startIndex, startIndex + (windowDays - 1));
+            
+            let totalProtein = 0;
+            let totalFat = 0;
+            let totalNetCarbs = 0;
+            let validDays = 0;
+            
+            actualData.forEach(row => {
+                if (row && row.length >= 7) {
+                    const calories = parseFloat(row[1]) || 0;
+                    const fat = parseFloat(row[2]) || 0;
+                    const carbs = parseFloat(row[3]) || 0;
+                    const protein = parseFloat(row[4]) || 0;
+                    const fiber = parseFloat(row[5]) || 0;
+                    const netCarbs = carbs - fiber;
+                    
+                    if (calories > 0) {
+                        totalProtein += protein;
+                        totalFat += fat;
+                        totalNetCarbs += netCarbs;
+                        validDays++;
+                    }
+                }
+            });
+            
+            if (validDays === 0) {
+                return null;
+            }
+            
+            return {
+                totalProtein: totalProtein,
+                totalFat: totalFat,
+                totalNetCarbs: totalNetCarbs
+            };
+        }
+        
         // Load and display statistics
         async function loadStatistics() {
             try {
-                // Load nutrition data for calorie average
-                const nutritionResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=getNutrition');
-                const nutritionData = await nutritionResponse.json();
+                // Load nutrition data
+                const nutritionResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`);
+                const nutritionDataResponse = await nutritionResponse.json();
                 
-                if (nutritionData.success && nutritionData.data && nutritionData.data.length >= 3) {
-                    // Calculate last 3 days calorie average
-                    const last3Days = nutritionData.data.slice(0, 3);
-                    const calorieSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
-                    const calorieAvg = Math.round(calorieSum / 3);
-                    document.getElementById('last3DaysCalorieAvg').textContent = calorieAvg;
+                if (nutritionDataResponse.success && nutritionDataResponse.data) {
+                    const nutritionData = nutritionDataResponse.data;
                     
-                    // Calculate last 3 days protein average (protein is at index 4 in nutrition data)
-                    const proteinSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[4]) || 0), 0);
-                    const proteinAvg = (proteinSum / 3).toFixed(1);
-                    document.getElementById('last3DaysProteinAvg').textContent = proteinAvg + ' גרם';
+                    // Check if first row is header
+                    const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                                     (typeof nutritionData[0][0] === 'string') && 
+                                     (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+                    
+                    // Calculate last 3 days calorie average
+                    const dataStartIndex = hasHeader ? 1 : 0;
+                    const last3Days = nutritionData.slice(dataStartIndex, dataStartIndex + 3);
+                    
+                    if (last3Days.length >= 3) {
+                        const calorieSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
+                        const calorieAvg = Math.round(calorieSum / 3);
+                        document.getElementById('last3DaysCalorieAvg').textContent = calorieAvg;
+                        
+                        // Calculate last 3 days protein average (protein is at index 4)
+                        const proteinSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[4]) || 0), 0);
+                        const proteinAvg = (proteinSum / 3).toFixed(1);
+                        document.getElementById('last3DaysProteinAvg').textContent = proteinAvg + ' גרם';
+                    }
+                    
+                    // Calculate maximum calories for today based on minimum gaps across all windows
+                    const allCalorieTargetGaps = [];
+                    const allTdeeGaps = [];
+                    
+                    WINDOWS.forEach(windowDays => {
+                        const gapData = calculateWindowGap(nutritionData, windowDays);
+                        if (gapData) {
+                            allCalorieTargetGaps.push(gapData.calorieTargetGap);
+                            allTdeeGaps.push(gapData.tdeeGap);
+                        }
+                    });
+                    
+                    if (allCalorieTargetGaps.length > 0) {
+                        const minCalorieTargetGap = Math.min(...allCalorieTargetGaps);
+                        const minTdeeGap = Math.min(...allTdeeGaps);
+                        document.getElementById('maxCaloriesTodayTarget').textContent = minCalorieTargetGap.toFixed(0);
+                        document.getElementById('maxCaloriesTodayTdee').textContent = minTdeeGap.toFixed(0);
+                    } else {
+                        document.getElementById('maxCaloriesTodayTarget').textContent = '--';
+                        document.getElementById('maxCaloriesTodayTdee').textContent = '--';
+                    }
+                    
+                    // Calculate macro gaps across all windows
+                    const targetMacros = calculateMacrosForCalories(CALORIE_TARGET);
+                    const allProteinGaps = [];
+                    const allFatGaps = [];
+                    const allCarbsGaps = [];
+                    
+                    WINDOWS.forEach(windowDays => {
+                        const actuals = calculateWindowActuals(nutritionData, windowDays);
+                        
+                        if (actuals) {
+                            // Calculate cumulative target for window days
+                            const cumulativeTargetProtein = targetMacros.protein * windowDays;
+                            const cumulativeTargetFat = targetMacros.fat * windowDays;
+                            const cumulativeTargetCarbs = targetMacros.carbs * windowDays;
+                            
+                            // Calculate gaps: Cumulative Target - Cumulative Actual
+                            const proteinGap = cumulativeTargetProtein - actuals.totalProtein;
+                            const fatGap = cumulativeTargetFat - actuals.totalFat;
+                            const carbsGap = cumulativeTargetCarbs - actuals.totalNetCarbs;
+                            
+                            allProteinGaps.push(proteinGap);
+                            allFatGaps.push(fatGap);
+                            allCarbsGaps.push(carbsGap);
+                        }
+                    });
+                    
+                    if (allProteinGaps.length > 0) {
+                        // Find max protein gap (biggest) and min fat/carbs gaps (lowest)
+                        const maxProteinGap = Math.max(...allProteinGaps);
+                        const minFatGap = Math.min(...allFatGaps);
+                        const minCarbsGap = Math.min(...allCarbsGaps);
+                        
+                        document.getElementById('maxProteinGap').textContent = maxProteinGap.toFixed(0);
+                        document.getElementById('minFatGap').textContent = minFatGap.toFixed(0);
+                        document.getElementById('minCarbsGap').textContent = minCarbsGap.toFixed(0);
+                    } else {
+                        document.getElementById('maxProteinGap').textContent = '--';
+                        document.getElementById('minFatGap').textContent = '--';
+                        document.getElementById('minCarbsGap').textContent = '--';
+                    }
                 }
                 
                 // Load body metrics data for weight average
-                const bodyMetricsResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=get');
+                const bodyMetricsResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
                 const bodyMetricsData = await bodyMetricsResponse.json();
                 
                 if (bodyMetricsData.success && bodyMetricsData.data && bodyMetricsData.data.length >= 3) {
