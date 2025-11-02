@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>השוואת מקרונוטריינטים - טבלה (מינוס יום אחד)</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .goals-config {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .goals-config h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .goal-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .goal-input label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .goal-input input {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .goal-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .secondary-button {
+            background: #95a5a6;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .value-positive {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        
+        .value-negative {
+            color: #c62828;
+            font-weight: bold;
+        }
+        
+        .section-header {
+            background: transparent;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        @media (max-width: 1000px) {
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            table {
+                min-width: 1000px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥗 השוואת מקרונוטריינטים - טבלה (מינוס יום אחד)</h1>
+            <p>השוואת חלבון, פחמימות ושומן בפועל מול יעדים (TDEE ויעד קלורי)</p>
+        </div>
+        
+        <!-- TDEE and Target Configuration -->
+        <div class="goals-config">
+            <h2>⚙️ הגדרות</h2>
+            <div class="goals-grid">
+                <div class="goal-input">
+                    <label>🔥 TDEE (סך קלוריות יומי)</label>
+                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>🎯 יעד קלורי יומי</label>
+                    <input type="number" id="calorieTargetValue" value="2250" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>💪 חלבון (גרם)</label>
+                    <input type="number" id="proteinValue" value="160" min="0" step="5">
+                </div>
+                <div class="goal-input">
+                    <label>🍯 שומן (% מהקלוריות)</label>
+                    <input type="number" id="fatPercentValue" value="25" min="0" max="100" step="1">
+                </div>
+                <div class="goal-input">
+                    <label>🎯 גירעון קלורי שבועי (קלוריות לשבוע)</label>
+                    <input type="number" id="weeklyDeficitValue" value="1050" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>⚖️ גירעון שבועי בגרמים</label>
+                    <input type="number" id="gramsDeficit" value="" min="0" step="10" placeholder="לדוגמה: 100">
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button onclick="calculateFromGrams()">חשב מיגרמים</button>
+                <button onclick="calculateWithWeeklyDeficit()">חשב מיעד שבועי</button>
+                <button onclick="calculateMacros()">עדכן הגדרות</button>
+                <button onclick="loadData()" class="secondary-button">טען נתונים</button>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            🔄 טוען נתונים...
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            ❌ שגיאה בטעינת הנתונים.
+            <button onclick="loadData()" style="margin-left: 10px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                נסה שוב
+            </button>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="summary-container" style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #2c3e50; text-align: right;">📊 סיכום</h3>
+                <div class="summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע חלבון</div>
+                        <div id="avgProtein" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע שומן</div>
+                        <div id="avgFat" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע פחמימות נטו</div>
+                        <div id="avgCarbs" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">חלבון מקסימלי</div>
+                        <div id="maxProtein" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">שומן מינימלי</div>
+                        <div id="minFat" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">פחמימות נטו מינימליות</div>
+                        <div id="minCarbs" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr id="targetsRow" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                            <th colspan="2" style="font-weight: bold; font-size: 0.9rem;"></th>
+                            <th colspan="3" class="section-header" style="font-weight: bold; font-size: 0.9rem;">יעד קלורי (ליום)</th>
+                            <th colspan="3" class="section-header" style="font-weight: bold; font-size: 0.9rem;"></th>
+                            <th colspan="3" class="section-header" style="font-weight: bold; font-size: 0.9rem;"></th>
+                        </tr>
+                        <tr id="targetsRowValues" style="background: #e8eaf6;">
+                            <td colspan="2" style="font-weight: bold; color: #2c3e50; font-size: 0.9rem;">ערכים</td>
+                            <td id="targetProtein" style="font-weight: bold; color: #2c3e50; font-size: 0.9rem;"></td>
+                            <td id="targetFat" style="font-weight: bold; color: #2c3e50; font-size: 0.9rem;"></td>
+                            <td id="targetCarbs" style="font-weight: bold; color: #2c3e50; font-size: 0.9rem;"></td>
+                            <td colspan="9"></td>
+                        </tr>
+                        <tr>
+                            <th>חלון זמן</th>
+                            <th>ימים בפועל</th>
+                            <th colspan="3" class="section-header">בפועל (סה"כ)</th>
+                            <th colspan="3" class="section-header">יעד (סה"כ לחלון)</th>
+                            <th colspan="3" class="section-header">פער (יעד - בפועל)</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th>חלבון</th>
+                            <th>שומן</th>
+                            <th>פחמימות נטו</th>
+                            <th>חלבון</th>
+                            <th>שומן</th>
+                            <th>פחמימות נטו</th>
+                            <th>חלבון</th>
+                            <th>שומן</th>
+                            <th>פחמימות נטו</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Default values
+        let TDEE = 2400;
+        let CALORIE_TARGET = 2250; // TDEE - (1050/7) = 2400 - 150 = 2250
+        let PROTEIN = 160; // grams, fixed for both
+        let FAT_PERCENT = 25; // percentage of calories
+        
+        let nutritionData = [];
+        
+        const WINDOWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateMacros();
+            loadData();
+        });
+        
+        // Calculate macros based on current inputs
+        function calculateMacros() {
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
+            CALORIE_TARGET = parseFloat(document.getElementById('calorieTargetValue').value) || 2250;
+            PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
+            FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
+            
+            // Refresh display if data is already loaded
+            if (nutritionData.length > 0) {
+                displayData();
+            }
+        }
+        
+        // Calculate weekly deficit from grams
+        function calculateFromGrams() {
+            const gramsDeficit = parseFloat(document.getElementById('gramsDeficit').value) || 0;
+            
+            if (gramsDeficit <= 0) {
+                alert('אנא הכנס גירעון בגרמים חיובי');
+                return;
+            }
+            
+            const stepsCaloriesPerDay = 10000 / 25;
+            const dailyDeficitFromGrams = (gramsDeficit * 7.7 / 7) - stepsCaloriesPerDay;
+            const weeklyDeficitFromGrams = dailyDeficitFromGrams * 7;
+            
+            document.getElementById('weeklyDeficitValue').value = Math.round(weeklyDeficitFromGrams);
+            calculateWithWeeklyDeficit();
+        }
+        
+        // Calculate with weekly deficit
+        function calculateWithWeeklyDeficit() {
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
+            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
+            PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
+            FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
+            
+            CALORIE_TARGET = TDEE - (weeklyDeficit / 7);
+            document.getElementById('calorieTargetValue').value = Math.round(CALORIE_TARGET);
+            
+            if (nutritionData.length > 0) {
+                displayData();
+            }
+        }
+        
+        // Calculate macros for a given calorie amount
+        function calculateMacrosForCalories(calories) {
+            const proteinGrams = PROTEIN;
+            const proteinCalories = proteinGrams * 4;
+            
+            const fatCalories = calories * (FAT_PERCENT / 100);
+            const fatGrams = fatCalories / 9;
+            
+            const carbCalories = calories - proteinCalories - fatCalories;
+            const carbGrams = carbCalories / 4;
+            
+            return {
+                protein: proteinGrams,
+                fat: fatGrams,
+                carbs: carbGrams
+            };
+        }
+        
+        // Load nutrition data from Google Sheets
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('content');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            content.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    nutritionData = data.data;
+                    displayData();
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                loading.style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        // Calculate actual averages for a window (minus-one logic)
+        function calculateWindowActuals(windowDays) {
+            // Check if first row is header
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            // Need at least: (windowDays - 1) data rows, plus 1 if header exists
+            const minRequired = hasHeader ? windowDays : windowDays - 1;
+            if (!nutritionData || nutritionData.length < minRequired) {
+                return null;
+            }
+            
+            // Take the first (windowDays - 1) days from the data
+            const startIndex = hasHeader ? 1 : 0;
+            const actualData = nutritionData.slice(startIndex, startIndex + (windowDays - 1));
+            
+            let totalProtein = 0;
+            let totalFat = 0;
+            let totalNetCarbs = 0;
+            let validDays = 0;
+            
+            actualData.forEach(row => {
+                if (row && row.length >= 7) {
+                    const calories = parseFloat(row[1]) || 0;
+                    const fat = parseFloat(row[2]) || 0;
+                    const carbs = parseFloat(row[3]) || 0;
+                    const protein = parseFloat(row[4]) || 0;
+                    const fiber = parseFloat(row[5]) || 0;
+                    const netCarbs = carbs - fiber;
+                    
+                    if (calories > 0) {
+                        totalProtein += protein;
+                        totalFat += fat;
+                        totalNetCarbs += netCarbs;
+                        validDays++;
+                    }
+                }
+            });
+            
+            if (validDays === 0) {
+                return null;
+            }
+            
+            return {
+                actualDays: validDays,
+                totalProtein: totalProtein,
+                totalFat: totalFat,
+                totalNetCarbs: totalNetCarbs,
+                avgProtein: totalProtein / validDays,
+                avgFat: totalFat / validDays,
+                avgNetCarbs: totalNetCarbs / validDays
+            };
+        }
+        
+        // Display data in table format
+        function displayData() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            const targetMacros = calculateMacrosForCalories(CALORIE_TARGET);
+            
+            // Update target values in header (per day)
+            document.getElementById('targetProtein').textContent = targetMacros.protein.toFixed(1);
+            document.getElementById('targetFat').textContent = targetMacros.fat.toFixed(1);
+            document.getElementById('targetCarbs').textContent = targetMacros.carbs.toFixed(1);
+            
+            // Arrays to store gap values for summary calculations
+            const allProteinGaps = [];
+            const allFatGaps = [];
+            const allCarbsGaps = [];
+            
+            // Create a row for each window
+            WINDOWS.forEach(windowDays => {
+                const actuals = calculateWindowActuals(windowDays);
+                
+                if (!actuals) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${windowDays}</td>
+                        <td colspan="10" style="color: #999; font-style: italic;">אין מספיק נתונים</td>
+                    `;
+                    tableBody.appendChild(row);
+                    return;
+                }
+                
+                // Calculate cumulative target for window days
+                const cumulativeTargetProtein = targetMacros.protein * windowDays;
+                const cumulativeTargetFat = targetMacros.fat * windowDays;
+                const cumulativeTargetCarbs = targetMacros.carbs * windowDays;
+                
+                // Calculate gaps: Cumulative Target - Cumulative Actual
+                const proteinGap = cumulativeTargetProtein - actuals.totalProtein;
+                const fatGap = cumulativeTargetFat - actuals.totalFat;
+                const carbsGap = cumulativeTargetCarbs - actuals.totalNetCarbs;
+                
+                // Gap classes: Compare GAP to daily target
+                // Protein: if gap > daily protein target → RED (actual too low), gap ≤ daily target → GREEN
+                // Fat: if gap < daily fat target → RED (actual too high), gap ≥ daily fat target → GREEN
+                // Carbs: if gap < daily carbs target → RED (actual too high), gap ≥ daily carbs target → GREEN
+                const proteinGapClass = proteinGap > targetMacros.protein ? 'value-negative' : 'value-positive';
+                const fatGapClass = fatGap < targetMacros.fat ? 'value-negative' : 'value-positive';
+                const carbsGapClass = carbsGap < targetMacros.carbs ? 'value-negative' : 'value-positive';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${windowDays}</strong></td>
+                    <td>${actuals.actualDays}</td>
+                    <td>${actuals.totalProtein.toFixed(0)}</td>
+                    <td>${actuals.totalFat.toFixed(0)}</td>
+                    <td>${actuals.totalNetCarbs.toFixed(0)}</td>
+                    <td>${cumulativeTargetProtein.toFixed(0)}</td>
+                    <td>${cumulativeTargetFat.toFixed(0)}</td>
+                    <td>${cumulativeTargetCarbs.toFixed(0)}</td>
+                    <td class="${proteinGapClass}">${proteinGap >= 0 ? '+' : ''}${proteinGap.toFixed(0)}</td>
+                    <td class="${fatGapClass}">${fatGap >= 0 ? '+' : ''}${fatGap.toFixed(0)}</td>
+                    <td class="${carbsGapClass}">${carbsGap >= 0 ? '+' : ''}${carbsGap.toFixed(0)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+                
+                // Store gap values for summary (only if we have valid data)
+                allProteinGaps.push(proteinGap);
+                allFatGaps.push(fatGap);
+                allCarbsGaps.push(carbsGap);
+            });
+            
+            // Calculate and display summary from gap values
+            if (allProteinGaps.length > 0) {
+                // Calculate averages of gaps
+                const avgProteinGap = allProteinGaps.reduce((a, b) => a + b, 0) / allProteinGaps.length;
+                const avgFatGap = allFatGaps.reduce((a, b) => a + b, 0) / allFatGaps.length;
+                const avgCarbsGap = allCarbsGaps.reduce((a, b) => a + b, 0) / allCarbsGaps.length;
+                
+                // Find max protein gap (biggest) and min fat/carbs gaps (lowest)
+                const maxProteinGap = Math.max(...allProteinGaps);
+                const minFatGap = Math.min(...allFatGaps);
+                const minCarbsGap = Math.min(...allCarbsGaps);
+                
+                // Update summary display
+                document.getElementById('avgProtein').textContent = avgProteinGap.toFixed(0);
+                document.getElementById('avgFat').textContent = avgFatGap.toFixed(0);
+                document.getElementById('avgCarbs').textContent = avgCarbsGap.toFixed(0);
+                document.getElementById('maxProtein').textContent = maxProteinGap.toFixed(0);
+                document.getElementById('minFat').textContent = minFatGap.toFixed(0);
+                document.getElementById('minCarbs').textContent = minCarbsGap.toFixed(0);
+            } else {
+                // No data available
+                document.getElementById('avgProtein').textContent = '-';
+                document.getElementById('avgFat').textContent = '-';
+                document.getElementById('avgCarbs').textContent = '-';
+                document.getElementById('maxProtein').textContent = '-';
+                document.getElementById('minFat').textContent = '-';
+                document.getElementById('minCarbs').textContent = '-';
+            }
+        }
+    </script>
+</body>
+</html>
+

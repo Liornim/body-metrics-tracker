@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניתוח גירעון קלורי - עם יעד (מינוס יום אחד) - טבלה</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .goals-config {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .goals-config h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .goal-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .goal-input label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .goal-input input {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .goal-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .secondary-button {
+            background: #95a5a6;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        td {
+            padding: 12px 15px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        
+        .value-positive {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        
+        .value-negative {
+            color: #c62828;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 1200px) {
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            table {
+                min-width: 1000px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📉 ניתוח גירעון קלורי - עם יעד (מינוס יום אחד) - טבלה</h1>
+            <p>השוואת נתונים בפועל (ללא היום האחרון) מול יעד קלורי לחלון זמן מלא</p>
+        </div>
+        
+        <!-- TDEE and Target Configuration -->
+        <div class="goals-config">
+            <h2>⚙️ הגדרת TDEE ויעד</h2>
+            <div class="goals-grid">
+                <div class="goal-input">
+                    <label>🔥 TDEE (סך קלוריות יומי)</label>
+                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>🎯 גירעון קלורי שבועי (קלוריות לשבוע)</label>
+                    <input type="number" id="weeklyDeficitTarget" value="1050" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>⚖️ גירעון שבועי בגרמים</label>
+                    <input type="number" id="gramsDeficit" value="" min="0" step="10" placeholder="לדוגמה: 100">
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button onclick="calculateFromGrams()">חשב מיגרמים</button>
+                <button onclick="updateGoals()">עדכן הגדרות</button>
+                <button onclick="loadData()" class="secondary-button">טען נתונים</button>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            🔄 טוען נתונים...
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            ❌ שגיאה בטעינת הנתונים.
+            <button onclick="loadData()" style="margin-left: 10px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                נסה שוב
+            </button>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="summary-container" style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #2c3e50; text-align: right;">📊 סיכום</h3>
+                <div class="summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע פער מול יעד</div>
+                        <div id="avgCalorieTargetGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע פער מול TDEE</div>
+                        <div id="avgTdeeGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">פער מול יעד מקסימלי</div>
+                        <div id="maxCalorieTargetGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">פער מול יעד מינימלי</div>
+                        <div id="minCalorieTargetGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">פער מול TDEE מקסימלי</div>
+                        <div id="maxTdeeGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                    <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">פער מול TDEE מינימלי</div>
+                        <div id="minTdeeGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>חלון זמן (ימים)</th>
+                            <th>ימים בפועל</th>
+                            <th>קלוריות בפועל</th>
+                            <th>יעד קלורי</th>
+                            <th>פער מול יעד</th>
+                            <th>TDEE לחלון</th>
+                            <th>פער מול TDEE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Default TDEE and weekly deficit target
+        let TDEE = 2400;
+        let WEEKLY_DEFICIT_TARGET = 1050;
+        
+        let nutritionData = [];
+        
+        const WINDOWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+        
+        // Calculate weekly deficit from grams
+        // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+        function calculateFromGrams() {
+            const gramsDeficit = parseFloat(document.getElementById('gramsDeficit').value) || 0;
+            
+            if (gramsDeficit <= 0) {
+                alert('אנא הכנס גירעון בגרמים חיובי');
+                return;
+            }
+            
+            // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+            // This gives daily deficit from food, multiply by 7 for weekly
+            // 10000/25 = 400 (steps calories per day)
+            const stepsCaloriesPerDay = 10000 / 25;
+            const dailyDeficitFromGrams = (gramsDeficit * 7.7 / 7) - stepsCaloriesPerDay;
+            const weeklyDeficitFromGrams = dailyDeficitFromGrams * 7;
+            
+            // Update the weekly deficit target input
+            document.getElementById('weeklyDeficitTarget').value = Math.round(weeklyDeficitFromGrams);
+            
+            // Update the variable and refresh display
+            WEEKLY_DEFICIT_TARGET = Math.round(weeklyDeficitFromGrams);
+            
+            console.log(`Calculated from ${gramsDeficit}g: Weekly deficit = ${WEEKLY_DEFICIT_TARGET} calories`);
+            
+            // Reload data with new settings
+            if (nutritionData.length > 0) {
+                displayData();
+            } else {
+                loadData();
+            }
+        }
+        
+        // Update goals from form inputs
+        function updateGoals() {
+            TDEE = parseInt(document.getElementById('tdeeValue').value) || 2400;
+            WEEKLY_DEFICIT_TARGET = parseInt(document.getElementById('weeklyDeficitTarget').value) || 1050;
+            
+            console.log('TDEE updated:', TDEE);
+            console.log('Weekly deficit target updated:', WEEKLY_DEFICIT_TARGET);
+            
+            // Reload data with new settings
+            if (nutritionData.length > 0) {
+                displayData();
+            } else {
+                loadData();
+            }
+        }
+        
+        // Load nutrition data from Google Sheets
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('content');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            content.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    nutritionData = data.data;
+                    displayData();
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                loading.style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        // Calculate target gap for a specific window
+        // Data structure from Google Sheets: 
+        // - Row 0: Header row (may exist, check for 'Date' or 'תאריך'), then data starts
+        // - Data is ordered from NEW to OLD (newest dates first)
+        // - Take the first (windowDays - 1) days from the data (starting from row 0 if no header, row 1 if header exists)
+        // Target: calculated for full windowDays
+        function calculateWindowGap(windowDays) {
+            // Check if first row is header (contains 'Date' or 'תאריך')
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            // Need at least: (windowDays - 1) data rows, plus 1 if header exists
+            const minRequired = hasHeader ? windowDays : windowDays - 1;
+            if (!nutritionData || nutritionData.length < minRequired) {
+                return null;
+            }
+            
+            // If header exists, skip it (start from index 1), otherwise start from index 0
+            // Take the first (windowDays - 1) days from the data
+            // For 3-day window: take indices [0, 1] = first 2 days (01/11 and 31/10)
+            const startIndex = hasHeader ? 1 : 0; // Skip header if exists, otherwise start from row 0
+            const actualData = nutritionData.slice(startIndex, startIndex + (windowDays - 1));
+            
+            let totalCalories = 0;
+            let validDays = 0;
+            
+            actualData.forEach(row => {
+                if (row && row.length >= 7) {
+                    const calories = parseFloat(row[1]) || 0;
+                    totalCalories += calories;
+                    validDays++;
+                }
+            });
+            
+            if (validDays === 0) {
+                return null;
+            }
+            
+            // Calculate TDEE for the full window (still using windowDays)
+            const windowTDEE = TDEE * windowDays;
+            
+            // Calculate calorie target for the full window
+            // Formula: TDEE - (weekly_deficit / 7 * window_days)
+            const windowDeficitTarget = (WEEKLY_DEFICIT_TARGET / 7) * windowDays;
+            const calorieTarget = windowTDEE - windowDeficitTarget;
+            
+            // Calculate gaps: Target - Actual (positive gap = under target = good)
+            const calorieTargetGap = calorieTarget - totalCalories;
+            const tdeeGap = windowTDEE - totalCalories;
+            
+            return {
+                windowDays: windowDays,
+                actualDays: validDays,
+                totalCalories: totalCalories,
+                windowTDEE: windowTDEE,
+                calorieTarget: calorieTarget,
+                calorieTargetGap: calorieTargetGap,
+                tdeeGap: tdeeGap
+            };
+        }
+        
+        // Display data in table format
+        function displayData() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            // Arrays to store gap values for summary calculations
+            const allCalorieTargetGaps = [];
+            const allTdeeGaps = [];
+            
+            // Create a row for each window
+            WINDOWS.forEach(windowDays => {
+                const gapData = calculateWindowGap(windowDays);
+                
+                if (!gapData) {
+                    // Show empty row if no data
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${windowDays}</td>
+                        <td colspan="6" style="color: #999; font-style: italic;">אין מספיק נתונים</td>
+                    `;
+                    tableBody.appendChild(row);
+                    return;
+                }
+                
+                // Gaps: positive is good (under target/TDEE), negative is bad (over target/TDEE)
+                const calorieGapClass = gapData.calorieTargetGap >= 0 ? 'value-positive' : 'value-negative';
+                const tdeeGapClass = gapData.tdeeGap >= 0 ? 'value-positive' : 'value-negative';
+                const calorieGapSign = gapData.calorieTargetGap >= 0 ? '+' : '';
+                const tdeeGapSign = gapData.tdeeGap >= 0 ? '+' : '';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${gapData.windowDays}</strong></td>
+                    <td>${gapData.actualDays}</td>
+                    <td>${gapData.totalCalories.toFixed(0)}</td>
+                    <td>${gapData.calorieTarget.toFixed(0)}</td>
+                    <td class="${calorieGapClass}">${calorieGapSign}${gapData.calorieTargetGap.toFixed(0)}</td>
+                    <td>${gapData.windowTDEE.toFixed(0)}</td>
+                    <td class="${tdeeGapClass}">${tdeeGapSign}${gapData.tdeeGap.toFixed(0)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+                
+                // Store gap values for summary (only if we have valid data)
+                allCalorieTargetGaps.push(gapData.calorieTargetGap);
+                allTdeeGaps.push(gapData.tdeeGap);
+            });
+            
+            // Calculate and display summary from gap values
+            if (allCalorieTargetGaps.length > 0) {
+                // Calculate averages of gaps
+                const avgCalorieTargetGap = allCalorieTargetGaps.reduce((a, b) => a + b, 0) / allCalorieTargetGaps.length;
+                const avgTdeeGap = allTdeeGaps.reduce((a, b) => a + b, 0) / allTdeeGaps.length;
+                
+                // Find max and min gaps
+                const maxCalorieTargetGap = Math.max(...allCalorieTargetGaps);
+                const minCalorieTargetGap = Math.min(...allCalorieTargetGaps);
+                const maxTdeeGap = Math.max(...allTdeeGaps);
+                const minTdeeGap = Math.min(...allTdeeGaps);
+                
+                // Update summary display
+                document.getElementById('avgCalorieTargetGap').textContent = avgCalorieTargetGap.toFixed(0);
+                document.getElementById('avgTdeeGap').textContent = avgTdeeGap.toFixed(0);
+                document.getElementById('maxCalorieTargetGap').textContent = maxCalorieTargetGap.toFixed(0);
+                document.getElementById('minCalorieTargetGap').textContent = minCalorieTargetGap.toFixed(0);
+                document.getElementById('maxTdeeGap').textContent = maxTdeeGap.toFixed(0);
+                document.getElementById('minTdeeGap').textContent = minTdeeGap.toFixed(0);
+            } else {
+                // No data available
+                document.getElementById('avgCalorieTargetGap').textContent = '-';
+                document.getElementById('avgTdeeGap').textContent = '-';
+                document.getElementById('maxCalorieTargetGap').textContent = '-';
+                document.getElementById('minCalorieTargetGap').textContent = '-';
+                document.getElementById('maxTdeeGap').textContent = '-';
+                document.getElementById('minTdeeGap').textContent = '-';
+            }
+        }
+    </script>
+</body>
+</html>
+

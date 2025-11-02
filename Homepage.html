@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת מעקב בריאות וכושר</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .app-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-align: center;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+        }
+        
+        .app-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .app-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .app-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            min-height: 40px;
+        }
+        
+        .status-bar {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            color: white;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .app-link {
+            display: inline-block;
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .app-link:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 מערכת מעקב בריאות וכושר</h1>
+            <p>מערכת מקיפה למעקב אחר מדדי גוף, תזונה וכושר עם ניתוחים מתקדמים, טבלאות וסיכומים</p>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">ממוצע חלבון (3 ימים)</div>
+                <div class="status-value" id="last3DaysProteinAvg">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">ממוצע קלוריות (3 ימים)</div>
+                <div class="status-value" id="last3DaysCalorieAvg">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">ממוצע משקל (3 ימים)</div>
+                <div class="status-value" id="lastDaysAvgWeight">--</div>
+            </div>
+        </div>
+        
+        <div class="apps-grid">
+            <!-- Body Metrics Tracker -->
+            <div class="app-card">
+                <div class="app-icon">⚖️</div>
+                <div class="app-title">הזנה ומעקב מדדי גוף</div>
+                <div class="app-description">מעקב אחר משקל, שריר, שומן ונוזלים עם ניתוחים וממוצעים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Nutrition Tracker -->
+            <div class="app-card">
+                <div class="app-icon">🥗</div>
+                <div class="app-title">הזנה ומעקב תזונה וכושר</div>
+                <div class="app-description">מעקב אחר קלוריות, מקרו-נוטריינטים וצעדים עם השוואות למטרות</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/nutrition.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- 3-Day Metrics Comparison -->
+            <div class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-title">ניתוח מדדי גוף 3 ימים</div>
+                <div class="app-description">השוואת תאריך נבחר לממוצע 3 ימים עם גרפים וצבעי סטטוס</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/3-day-metrics.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Weight Analysis by Windows -->
+            <div class="app-card">
+                <div class="app-icon">📈</div>
+                <div class="app-title">ניתוח משקל לפי חלונות</div>
+                <div class="app-description">ניתוח מגמות משקל עם חלונות זמן לא חופפים לזיהוי דפוסים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/weight-analysis-by-windows.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Weight Summary by Windows -->
+            <div class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-title">סיכום משקל לפי חלונות</div>
+                <div class="app-description">סקירת התקדמות המשקל בכל חלונות הזמן עם כרטיסים וסיכומים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/weight-summary-by-windows.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Real Maintenance Calculator -->
+            <div class="app-card">
+                <div class="app-icon">🔬</div>
+                <div class="app-title">מחשבון תחזוקה אמיתית</div>
+                <div class="app-description">חישוב קלוריות תחזוקה אמיתיות על בסיס שינויי משקל וצריכה</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/real-maintenance-calculator.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Maintenance History Table -->
+            <div class="app-card">
+                <div class="app-icon">📋</div>
+                <div class="app-title">טבלת היסטוריית תחזוקה</div>
+                <div class="app-description">טבלה של 5 חישובי תחזוקה אחרונים לכל חלון זמן עם ממוצעים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/maintenance-history-table.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- TDEE Base Calculator -->
+            <div class="app-card">
+                <div class="app-icon">⚡</div>
+                <div class="app-title">מחשבון TDEE Base</div>
+                <div class="app-description">חישוב TDEE Base אוטומטי באמצעות שיטת השוואת בלוקים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/TDEE_Base_Calculator.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Targets vs Actual Nutrition -->
+            <div class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-title">יעדים מול בפועל - תזונה</div>
+                <div class="app-description">השוואת יעדי תזונה מול צריכה בפועל עם חישובי פערים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/targets-vs-actual-nutrition.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Calorie Deficit Analysis with Target -->
+            <div class="app-card">
+                <div class="app-icon">📉</div>
+                <div class="app-title">ניתוח גירעון קלורי עם יעד</div>
+                <div class="app-description">ניתוח גירעון קלורי ממזון ומצעדים עם יעד קלורי שבועי</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/calorie-deficit-analysis-with-target.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Macro Calculator -->
+            <div class="app-card">
+                <div class="app-icon">🥗</div>
+                <div class="app-title">מחשבון מקרונוטריינטים</div>
+                <div class="app-description">חישוב חלבון, פחמימות ושומן עבור TDEE ויעד קלורי</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/macro-calculator.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Calorie Deficit Analysis Minus One Table -->
+            <div class="app-card">
+                <div class="app-icon">📉</div>
+                <div class="app-title">ניתוח גירעון קלורי - טבלה</div>
+                <div class="app-description">ניתוח גירעון קלורי בתצוגת טבלה (ללא היום האחרון) עם סיכום</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/calorie-deficit-analysis-with-target-minus-one-table.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Macro Comparison Minus One Table -->
+            <div class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-title">השוואת מקרונוטריינטים - טבלה</div>
+                <div class="app-description">השוואת מקרונוטריינטים בתצוגת טבלה (ללא היום האחרון) עם סיכום</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/macro-comparison-minus-one-table.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load and display statistics
+        async function loadStatistics() {
+            try {
+                // Load nutrition data for calorie average
+                const nutritionResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=getNutrition');
+                const nutritionData = await nutritionResponse.json();
+                
+                if (nutritionData.success && nutritionData.data && nutritionData.data.length >= 3) {
+                    // Calculate last 3 days calorie average
+                    const last3Days = nutritionData.data.slice(0, 3);
+                    const calorieSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
+                    const calorieAvg = Math.round(calorieSum / 3);
+                    document.getElementById('last3DaysCalorieAvg').textContent = calorieAvg;
+                    
+                    // Calculate last 3 days protein average (protein is at index 4 in nutrition data)
+                    const proteinSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[4]) || 0), 0);
+                    const proteinAvg = (proteinSum / 3).toFixed(1);
+                    document.getElementById('last3DaysProteinAvg').textContent = proteinAvg + ' גרם';
+                }
+                
+                // Load body metrics data for weight average
+                const bodyMetricsResponse = await fetch('https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec?action=get');
+                const bodyMetricsData = await bodyMetricsResponse.json();
+                
+                if (bodyMetricsData.success && bodyMetricsData.data && bodyMetricsData.data.length >= 3) {
+                    // Calculate last 3 days weight average from גיליון1, column משקל (ק״ג) which is index 1
+                    const last3Days = bodyMetricsData.data.slice(0, 3);
+                    const weightSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
+                    const weightAvg = (weightSum / 3).toFixed(2);
+                    document.getElementById('lastDaysAvgWeight').textContent = weightAvg + ' ק"ג';
+                }
+                
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                // Keep the default "--" values if there's an error
+            }
+        }
+        
+        // Load statistics when page loads
+        document.addEventListener('DOMContentLoaded', loadStatistics);
+    </script>
+</body>
+</html>
