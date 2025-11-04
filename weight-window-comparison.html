@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>השוואת ממוצעי חלונות משקל</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .refresh-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .comparison-table-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .comparison-table tr:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .comparison-table .window-cell {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .comparison-table .value-cell {
+            font-size: 1rem;
+        }
+        
+        .comparison-table .avg-cell {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .comparison-table .diff-cell {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .diff-positive {
+            color: #c8e6c9;
+        }
+        
+        .diff-negative {
+            color: #ffcdd2;
+        }
+        
+        .diff-neutral {
+            color: #ffe0b2;
+        }
+        
+        .dates-cell {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>השוואת ממוצעי חלונות משקל</h1>
+            <p>השוואת ממוצע המשקל של N ימים אחרונים מול N הימים שלפניהם</p>
+        </div>
+        
+        <div class="content">
+            <div class="controls">
+                <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                טוען נתונים ומחשב השוואות...
+            </div>
+            
+            <div id="error" class="error" style="display: none;">
+                ❌ שגיאה בטעינת הנתונים.
+            </div>
+            
+            <div id="comparisonTable" class="comparison-table-container" style="display: none;">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>חלון</th>
+                            <th>תאריכים - חלון אחרון</th>
+                            <th>ממוצע - חלון אחרון</th>
+                            <th>תאריכים - חלון קודם</th>
+                            <th>ממוצע - חלון קודם</th>
+                            <th>הפרש</th>
+                            <th>אחוז שינוי</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        const windowSizes = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        
+        // Parse DD/MM/YYYY date format
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        
+        // Format date as DD/MM/YYYY
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Sort data by date ascending
+        function sortDataAsc(data) {
+            return [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                if (!dateA || !dateB) return 0;
+                return dateA - dateB;
+            });
+        }
+        
+        // Calculate mean
+        function calculateMean(values) {
+            if (values.length === 0) return 0;
+            const validValues = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+            if (validValues.length === 0) return 0;
+            return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+        }
+        
+        // Format weight with 2 decimal places
+        function formatWeight(weight) {
+            return weight.toFixed(2);
+        }
+        
+        // Format delta with sign
+        function formatDelta(delta) {
+            if (delta === null || delta === undefined) return '—';
+            const sign = delta >= 0 ? '+' : '';
+            return `${sign}${delta.toFixed(2)}`;
+        }
+        
+        // Get delta class for styling
+        function getDeltaClass(delta) {
+            if (delta === null || delta === undefined) return 'diff-neutral';
+            return delta > 0 ? 'diff-positive' : delta < 0 ? 'diff-negative' : 'diff-neutral';
+        }
+        
+        // Calculate percentage change
+        function calculatePercentageChange(oldValue, newValue) {
+            if (!oldValue || oldValue === 0) return null;
+            return ((newValue - oldValue) / oldValue) * 100;
+        }
+        
+        // Compare windows: last N days vs previous N days
+        function compareWindows(weightData, windowSize) {
+            const sortedData = sortDataAsc(weightData);
+            
+            // Need at least windowSize * 2 days to compare
+            if (sortedData.length < windowSize * 2) {
+                return null;
+            }
+            
+            // Get last N days (most recent)
+            const lastWindow = sortedData.slice(-windowSize);
+            const lastWindowWeights = lastWindow.map(item => item.weight);
+            const lastWindowAvg = calculateMean(lastWindowWeights);
+            const lastWindowStart = lastWindow[0].date;
+            const lastWindowEnd = lastWindow[lastWindow.length - 1].date;
+            const lastWindowRange = `${lastWindowStart} - ${lastWindowEnd}`;
+            
+            // Get previous N days (before the last window)
+            const previousWindow = sortedData.slice(-windowSize * 2, -windowSize);
+            const previousWindowWeights = previousWindow.map(item => item.weight);
+            const previousWindowAvg = calculateMean(previousWindowWeights);
+            const previousWindowStart = previousWindow[0].date;
+            const previousWindowEnd = previousWindow[previousWindow.length - 1].date;
+            const previousWindowRange = `${previousWindowStart} - ${previousWindowEnd}`;
+            
+            // Calculate difference
+            const diff = lastWindowAvg - previousWindowAvg;
+            const percentageChange = calculatePercentageChange(previousWindowAvg, lastWindowAvg);
+            
+            return {
+                windowSize: windowSize,
+                lastWindowRange: lastWindowRange,
+                lastWindowAvg: lastWindowAvg,
+                previousWindowRange: previousWindowRange,
+                previousWindowAvg: previousWindowAvg,
+                diff: diff,
+                percentageChange: percentageChange
+            };
+        }
+        
+        // Display comparison table
+        function displayComparison(weightData) {
+            const comparisonTable = document.getElementById('comparisonTable');
+            const comparisonTableBody = document.getElementById('comparisonTableBody');
+            
+            if (weightData.length === 0) {
+                comparisonTable.style.display = 'none';
+                return;
+            }
+            
+            let tableRows = '';
+            
+            windowSizes.forEach(windowSize => {
+                const comparison = compareWindows(weightData, windowSize);
+                
+                if (!comparison) {
+                    tableRows += `
+                        <tr>
+                            <td class="window-cell">${windowSize} ימים</td>
+                            <td class="dates-cell">--</td>
+                            <td class="avg-cell">--</td>
+                            <td class="dates-cell">--</td>
+                            <td class="avg-cell">--</td>
+                            <td class="diff-cell">--</td>
+                            <td class="value-cell">--</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                const diffClass = getDeltaClass(comparison.diff);
+                const diffText = formatDelta(comparison.diff);
+                const percentageText = comparison.percentageChange !== null 
+                    ? `${comparison.percentageChange >= 0 ? '+' : ''}${comparison.percentageChange.toFixed(2)}%`
+                    : '—';
+                
+                tableRows += `
+                    <tr>
+                        <td class="window-cell">${windowSize} ימים</td>
+                        <td class="dates-cell">${comparison.lastWindowRange}</td>
+                        <td class="avg-cell">${formatWeight(comparison.lastWindowAvg)} ק"ג</td>
+                        <td class="dates-cell">${comparison.previousWindowRange}</td>
+                        <td class="avg-cell">${formatWeight(comparison.previousWindowAvg)} ק"ג</td>
+                        <td class="diff-cell ${diffClass}">${diffText} ק"ג</td>
+                        <td class="value-cell ${diffClass}">${percentageText}</td>
+                    </tr>
+                `;
+            });
+            
+            comparisonTableBody.innerHTML = tableRows;
+            comparisonTable.style.display = 'block';
+        }
+        
+        // Load data from Google Sheets
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const comparisonTable = document.getElementById('comparisonTable');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            comparisonTable.style.display = 'none';
+            
+            try {
+                console.log('טוען נתוני משקל מ-Google Sheets...');
+                
+                // Load body metrics (weight)
+                const weightResponse = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
+                const weightData = await weightResponse.json();
+                
+                if (!weightData.success || !weightData.data || weightData.data.length === 0) {
+                    throw new Error('לא נמצאו נתוני משקל');
+                }
+                
+                // Check if first row is header for weight data
+                const hasHeader = weightData.data[0] && weightData.data[0][0] && 
+                                 (typeof weightData.data[0][0] === 'string') && 
+                                 (weightData.data[0][0].includes('תאריך') || weightData.data[0][0].includes('Date') || 
+                                  weightData.data[0][0].includes('משקל') || weightData.data[0][0].includes('Weight'));
+                
+                const startIndex = hasHeader ? 1 : 0;
+                
+                // Convert weight data to the format we need
+                // Data is ordered from newest to oldest, so we need to reverse it
+                const rawWeightData = weightData.data.slice(startIndex).reverse();
+                
+                const currentWeightData = rawWeightData.map(row => ({
+                    date: row[0], // Date
+                    weight: parseFloat(row[1]) // Weight
+                })).filter(item => item.weight > 0 && item.date); // Filter out invalid entries
+                
+                console.log(`נטענו ${currentWeightData.length} נקודות נתוני משקל`);
+                
+                // Display comparison
+                displayComparison(currentWeightData);
+                
+            } catch (error) {
+                console.error('שגיאה בטעינת נתונים:', error);
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `❌ שגיאה בטעינת הנתונים: ${error.message}`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('דף השוואת ממוצעי חלונות משקל נטען');
+            loadData();
+        });
+    </script>
+</body>
+</html>
+

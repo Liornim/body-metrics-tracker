@@ -242,15 +242,20 @@
             <div class="goals-grid">
                 <div class="goal-input">
                     <label>🔥 TDEE (סך קלוריות יומי)</label>
-                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                    <input type="number" id="tdeeValue" value="2034" min="0" step="10">
                 </div>
                 <div class="goal-input">
                     <label>🎯 גירעון קלורי שבועי (קלוריות לשבוע)</label>
-                    <input type="number" id="weeklyDeficitTarget" value="1000" min="0" step="10">
+                    <input type="number" id="weeklyDeficitTarget" value="1050" min="0" step="10">
+                </div>
+                <div class="goal-input">
+                    <label>⚖️ גירעון שבועי בגרמים</label>
+                    <input type="number" id="gramsDeficit" value="" min="0" step="10" placeholder="לדוגמה: 100">
                 </div>
             </div>
             
             <div class="buttons">
+                <button onclick="calculateFromGrams()">חשב מיגרמים</button>
                 <button onclick="updateGoals()">עדכן הגדרות</button>
                 <button onclick="loadData()" class="secondary-button">טען נתונים</button>
             </div>
@@ -276,22 +281,55 @@
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
         
         // Default TDEE and weekly deficit target
-        let TDEE = 2400;
-        let WEEKLY_DEFICIT_TARGET = 1000;
+        let TDEE = 2034;
+        let WEEKLY_DEFICIT_TARGET = 1050;
         
         let nutritionData = [];
         
-        const WINDOWS = [3, 5, 7, 9, 14];
+        const WINDOWS = [3, 5, 7, 9, 10, 11, 12, 13, 14];
         
         // Load data on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
         });
         
+        // Calculate weekly deficit from grams
+        // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+        function calculateFromGrams() {
+            const gramsDeficit = parseFloat(document.getElementById('gramsDeficit').value) || 0;
+            
+            if (gramsDeficit <= 0) {
+                alert('אנא הכנס גירעון בגרמים חיובי');
+                return;
+            }
+            
+            // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+            // This gives daily deficit from food, multiply by 7 for weekly
+            // 10000/25 = 400 (steps calories per day)
+            const stepsCaloriesPerDay = 10000 / 25;
+            const dailyDeficitFromGrams = (gramsDeficit * 7.7 / 7) - stepsCaloriesPerDay;
+            const weeklyDeficitFromGrams = dailyDeficitFromGrams * 7;
+            
+            // Update the weekly deficit target input
+            document.getElementById('weeklyDeficitTarget').value = Math.round(weeklyDeficitFromGrams);
+            
+            // Update the variable and refresh display
+            WEEKLY_DEFICIT_TARGET = Math.round(weeklyDeficitFromGrams);
+            
+            console.log(`Calculated from ${gramsDeficit}g: Weekly deficit = ${WEEKLY_DEFICIT_TARGET} calories`);
+            
+            // Reload data with new settings
+            if (nutritionData.length > 0) {
+                displayData();
+            } else {
+                loadData();
+            }
+        }
+        
         // Update goals from form inputs
         function updateGoals() {
-            TDEE = parseInt(document.getElementById('tdeeValue').value) || 2400;
-            WEEKLY_DEFICIT_TARGET = parseInt(document.getElementById('weeklyDeficitTarget').value) || 1000;
+            TDEE = parseInt(document.getElementById('tdeeValue').value) || 2034;
+            WEEKLY_DEFICIT_TARGET = parseInt(document.getElementById('weeklyDeficitTarget').value) || 1050;
             
             console.log('TDEE updated:', TDEE);
             console.log('Weekly deficit target updated:', WEEKLY_DEFICIT_TARGET);
@@ -381,15 +419,16 @@
             const stepsCalories = totalSteps / 25;
             const stepsDeficit = stepsCalories; // This is the calorie burn from steps
             
-            // Total deficit: steps deficit + food deficit (if food is under TDEE)
-            // If foodDeficit is negative (under TDEE), it contributes to total deficit
-            // If foodDeficit is positive (over TDEE), it reduces the total deficit
-            const foodDeficitContribution = foodDeficit < 0 ? -foodDeficit : 0; // Only count if under TDEE
-            const totalDeficit = stepsDeficit + foodDeficitContribution;
-            
             // Weight loss calculations
-            const nutritionWeightLoss = foodDeficit < 0 ? (-foodDeficit / 7700) : 0; // Only if under TDEE
+            // Negative foodDeficit (under TDEE) = positive weight loss
+            // Positive foodDeficit (over TDEE) = negative weight loss (weight gain)
+            const nutritionWeightLoss = -foodDeficit / 7700;
             const stepsWeightLoss = stepsDeficit / 7700;
+            
+            // Total deficit: steps deficit - food deficit
+            // When foodDeficit is negative (under TDEE), subtracting it adds to total deficit
+            // When foodDeficit is positive (over TDEE), subtracting it reduces total deficit
+            const totalDeficit = stepsDeficit - foodDeficit;
             const totalWeightLoss = totalDeficit / 7700;
             
             // Daily averages
@@ -401,6 +440,7 @@
             const avgCalorieTargetGap = calorieTargetGap / windowDays;
             const avgFoodDeficit = foodDeficit / windowDays;
             const avgTotalDeficit = totalDeficit / windowDays;
+            const avgTotalWeightLoss = totalWeightLoss / windowDays;
             
             return {
                 windowDays: windowDays,
@@ -422,7 +462,8 @@
                 avgCalorieTarget: avgCalorieTarget,
                 avgCalorieTargetGap: avgCalorieTargetGap,
                 avgFoodDeficit: avgFoodDeficit,
-                avgTotalDeficit: avgTotalDeficit
+                avgTotalDeficit: avgTotalDeficit,
+                avgTotalWeightLoss: avgTotalWeightLoss
             };
         }
         
@@ -466,8 +507,8 @@
                         <div class="deficit-details">
                             בפועל: ${deficits.totalCalories.toFixed(0)} קלוריות | יעד: ${deficits.calorieTarget.toFixed(0)} קלוריות
                         </div>
-                        <div class="deficit-details" style="margin-top: 5px; font-size: 0.85rem; color: #666;">
-                            חישוב: TDEE ${deficits.windowTDEE.toFixed(0)} - (${WEEKLY_DEFICIT_TARGET} ÷ 7 × ${windowDays}) = ${deficits.calorieTarget.toFixed(0)}
+                        <div class="deficit-details" style="margin-top: 5px; font-weight: bold;">
+                            ממוצע ליום: ${deficits.avgCalorieTargetGap >= 0 ? '+' : ''}${deficits.avgCalorieTargetGap.toFixed(0)} קלוריות
                         </div>
                     </div>
                     
@@ -478,6 +519,9 @@
                         </div>
                         <div class="deficit-details">
                             בפועל: ${deficits.totalCalories.toFixed(0)} קלוריות | TDEE: ${deficits.windowTDEE.toFixed(0)} קלוריות
+                        </div>
+                        <div class="deficit-details" style="margin-top: 5px; font-weight: bold;">
+                            ממוצע ליום: ${deficits.avgFoodDeficit >= 0 ? '+' : ''}${deficits.avgFoodDeficit.toFixed(0)} קלוריות
                         </div>
                         <div class="deficit-details" style="margin-top: 5px; font-weight: bold; color: ${foodDeficitClass === 'positive' ? '#2e7d32' : '#c62828'};">
                             ירידת משקל ממזון: ${deficits.nutritionWeightLoss.toFixed(2)} ק"ג
@@ -492,6 +536,9 @@
                         <div class="deficit-details">
                             סה"כ צעדים: ${deficits.totalSteps.toFixed(0)} | קלוריות נשרפו: ${deficits.stepsDeficit.toFixed(0)} (${deficits.totalSteps.toFixed(0)} ÷ 25)
                         </div>
+                        <div class="deficit-details" style="margin-top: 5px; font-weight: bold;">
+                            ממוצע ליום: -${deficits.avgStepsCalories.toFixed(0)} קלוריות
+                        </div>
                         <div class="deficit-details" style="margin-top: 5px; font-weight: bold; color: #2e7d32;">
                             ירידת משקל מצעדים: ${deficits.stepsWeightLoss.toFixed(2)} ק"ג
                         </div>
@@ -500,10 +547,13 @@
                     <div class="total-deficit">
                         <div class="total-deficit-label">גירעון קלורי כולל</div>
                         <div class="total-deficit-value">
-                            +${deficits.totalDeficit.toFixed(0)} קלוריות
+                            ${deficits.totalDeficit >= 0 ? '+' : ''}${deficits.totalDeficit.toFixed(0)} קלוריות
                         </div>
                         <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.9;">
-                            ${deficits.totalWeightLoss.toFixed(2)} ק"ג ירידת משקל צפויה (סה"כ)
+                            ממוצע ליום: ${deficits.avgTotalDeficit >= 0 ? '+' : ''}${deficits.avgTotalDeficit.toFixed(0)} קלוריות
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.9;">
+                            ${deficits.totalWeightLoss.toFixed(2)} ק"ג ${deficits.totalWeightLoss >= 0 ? 'ירידת משקל צפויה' : 'עליית משקל צפויה'} (סה"כ) | ממוצע ליום: ${deficits.avgTotalWeightLoss.toFixed(2)} ק"ג
                         </div>
                     </div>
                 `;

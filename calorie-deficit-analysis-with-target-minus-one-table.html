@@ -221,7 +221,7 @@
             <div class="goals-grid">
                 <div class="goal-input">
                     <label>🔥 TDEE (סך קלוריות יומי)</label>
-                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                    <input type="number" id="tdeeValue" value="2034" min="0" step="10">
                 </div>
                 <div class="goal-input">
                     <label>🎯 גירעון קלורי שבועי (קלוריות לשבוע)</label>
@@ -306,7 +306,7 @@
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
         
         // Default TDEE and weekly deficit target
-        let TDEE = 2400;
+        let TDEE = 2034;
         let WEEKLY_DEFICIT_TARGET = 1050;
         
         let nutritionData = [];
@@ -353,7 +353,7 @@
         
         // Update goals from form inputs
         function updateGoals() {
-            TDEE = parseInt(document.getElementById('tdeeValue').value) || 2400;
+            TDEE = parseInt(document.getElementById('tdeeValue').value) || 2034;
             WEEKLY_DEFICIT_TARGET = parseInt(document.getElementById('weeklyDeficitTarget').value) || 1050;
             
             console.log('TDEE updated:', TDEE);

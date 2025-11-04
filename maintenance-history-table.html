@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>טבלת היסטוריית תחזוקה</title>
+    <title>טבלת היסטוריית תחזוקה עד היום</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -192,6 +193,51 @@
             line-height: 1.6;
         }
         
+        .export-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .export-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .export-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .table-section {
+            margin-bottom: 40px;
+        }
+        
+        
+        .table-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 10px;
+            text-align: center;
+        }
+        
         @media (max-width: 768px) {
             .maintenance-table th,
             .maintenance-table td {
@@ -208,15 +254,15 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 טבלת היסטוריית תחזוקה</h1>
-            <p>הצגת 5 חישובי תחזוקה אחרונים לכל חלון זמן</p>
+            <h1>📊 טבלת היסטוריית תחזוקה עד היום</h1>
+            <p>הצגת 7 חישובי תחזוקה אחרונים לכל חלון זמן</p>
         </div>
         
         <div class="content">
             <div class="explanation">
                 <h4>📋 איך זה עובד?</h4>
-                <p><strong>הטבלה מציגה:</strong> 5 חישובי תחזוקה אחרונים לכל חלון זמן (3, 5, 7, 9, 14 ימים)</p>
-                <p><strong>כל שורה:</strong> תאריך אחרון + 4 תאריכים קודמים</p>
+                <p><strong>הטבלה מציגה:</strong> 7 חישובי תחזוקה אחרונים לכל חלון זמן (3, 5, 7, 9, 14 ימים)</p>
+                <p><strong>כל שורה:</strong> תאריך אחרון + 6 תאריכים קודמים</p>
                 <p><strong>כל עמודה:</strong> חלון זמן שונה עם חישוב התחזוקה האמיתית</p>
                 <p><strong>הנוסחה:</strong> תחזוקה = קלוריות ממוצעות + (ירידת משקל × 7700 ÷ ימים) - (צעדים ממוצעים ÷ 25)</p>
             </div>
@@ -237,7 +283,25 @@
             <div id="error" class="error" style="display: none;"></div>
             
             <div id="tableContainer" class="table-container" style="display: none;">
-                <!-- Table will be populated here -->
+                <div class="table-section">
+                    <h3>📊 טבלת היסטוריית תחזוקה - 7 חישובים אחרונים</h3>
+                    <div id="summaryTableContainer">
+                        <!-- Summary table will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <h3>📤 ייצוא נתונים</h3>
+                    <button class="export-btn" onclick="exportToExcel()">📊 ייצא ל-Excel</button>
+                    <button class="export-btn" onclick="exportFullHistoryToExcel()">📋 ייצא היסטוריה מלאה</button>
+                </div>
+                
+                <div class="table-section">
+                    <h3>📈 היסטוריה מלאה - כל הנתונים</h3>
+                    <div id="fullHistoryTableContainer">
+                        <!-- Full history table will be populated here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -320,6 +384,7 @@
                 }
 
                 displayMaintenanceTable(historyData, selectedDateFormatted);
+                displayFullHistoryTable(bodyMetricsData.data, nutritionData.data);
 
             } catch (error) {
                 showError('שגיאה בחיבור לשרת: ' + error.message);
@@ -340,8 +405,8 @@
 
             const history = [];
 
-            // Calculate maintenance for last 5 dates
-            for (let i = 0; i < 5; i++) {
+            // Calculate maintenance for last 7 dates
+            for (let i = 0; i < 7; i++) {
                 const currentDateIndex = selectedIndex + i;
                 
                 // Get current window data
@@ -389,7 +454,7 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('tableContainer').style.display = 'block';
 
-            const tableContainer = document.getElementById('tableContainer');
+            const tableContainer = document.getElementById('summaryTableContainer');
             
             // Create table
             const table = document.createElement('table');
@@ -417,6 +482,13 @@
             avgHeader.style.minWidth = '100px';
             avgHeader.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
             headerRow.appendChild(avgHeader);
+            
+            // Add trimmed average column header
+            const trimmedAvgHeader = document.createElement('th');
+            trimmedAvgHeader.textContent = 'ממוצע ללא קיצוניים';
+            trimmedAvgHeader.style.minWidth = '120px';
+            trimmedAvgHeader.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+            headerRow.appendChild(trimmedAvgHeader);
             
             thead.appendChild(headerRow);
             table.appendChild(thead);
@@ -447,9 +519,10 @@
                 }
                 row.appendChild(dateCell);
                 
-                // Calculate row average
+                // Calculate row average and trimmed average
                 let rowSum = 0;
                 let rowCount = 0;
+                const rowValues = [];
                 
                 // Maintenance cells for each window
                 historyData.forEach((windowData, j) => {
@@ -463,6 +536,7 @@
                         // Add to row average calculation
                         rowSum += maintenance;
                         rowCount++;
+                        rowValues.push(maintenance);
                         
                         // Color coding based on maintenance level
                         if (maintenance < 1500) {
@@ -498,6 +572,31 @@
                     avgCell.style.color = '#ccc';
                 }
                 row.appendChild(avgCell);
+                
+                // Add trimmed average cell (excluding highest and lowest values)
+                const trimmedAvgCell = document.createElement('td');
+                trimmedAvgCell.className = 'maintenance-value';
+                trimmedAvgCell.style.background = '#e8f5e8';
+                trimmedAvgCell.style.fontWeight = 'bold';
+                
+                if (rowValues.length >= 3) {
+                    // Sort values and remove highest and lowest
+                    const sortedValues = [...rowValues].sort((a, b) => a - b);
+                    const trimmedValues = sortedValues.slice(1, -1); // Remove first (lowest) and last (highest)
+                    const trimmedAvg = trimmedValues.reduce((sum, val) => sum + val, 0) / trimmedValues.length;
+                    trimmedAvgCell.textContent = trimmedAvg.toFixed(0);
+                    
+                    // Color coding for trimmed average
+                    if (trimmedAvg < 1500) {
+                        trimmedAvgCell.classList.add('low');
+                    } else if (trimmedAvg > 2500) {
+                        trimmedAvgCell.classList.add('high');
+                    }
+                } else {
+                    trimmedAvgCell.textContent = '-';
+                    trimmedAvgCell.style.color = '#ccc';
+                }
+                row.appendChild(trimmedAvgCell);
                 
                 tbody.appendChild(row);
             }
@@ -550,6 +649,32 @@
             }
             
             avgRow.appendChild(overallAvgCell);
+            
+            // Add overall trimmed average (excluding highest and lowest column averages)
+            const overallTrimmedAvgCell = document.createElement('td');
+            overallTrimmedAvgCell.className = 'maintenance-value';
+            overallTrimmedAvgCell.style.fontWeight = 'bold';
+            overallTrimmedAvgCell.style.background = '#c8e6c9';
+            overallTrimmedAvgCell.style.fontSize = '16px';
+            
+            if (validColumnAverages.length >= 3) {
+                const sortedColumnAverages = [...validColumnAverages].sort((a, b) => a - b);
+                const trimmedColumnAverages = sortedColumnAverages.slice(1, -1); // Remove highest and lowest
+                const overallTrimmedAvg = trimmedColumnAverages.reduce((sum, avg) => sum + avg, 0) / trimmedColumnAverages.length;
+                overallTrimmedAvgCell.textContent = overallTrimmedAvg.toFixed(0);
+                
+                // Color coding for overall trimmed average
+                if (overallTrimmedAvg < 1500) {
+                    overallTrimmedAvgCell.classList.add('low');
+                } else if (overallTrimmedAvg > 2500) {
+                    overallTrimmedAvgCell.classList.add('high');
+                }
+            } else {
+                overallTrimmedAvgCell.textContent = '-';
+                overallTrimmedAvgCell.style.color = '#ccc';
+            }
+            
+            avgRow.appendChild(overallTrimmedAvgCell);
             tbody.appendChild(avgRow);
             
             table.appendChild(tbody);
@@ -557,6 +682,279 @@
             tableContainer.appendChild(table);
         }
 
+        function displayFullHistoryTable(bodyData, nutritionData) {
+            const tableContainer = document.getElementById('fullHistoryTableContainer');
+            
+            // Sort data by date (newest first) - handle DD/MM/YYYY format
+            const parseDate = (dateStr) => {
+                const parts = dateStr.split('/');
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            };
+            
+            const sortedBodyData = [...bodyData].sort((a, b) => parseDate(b[0]) - parseDate(a[0]));
+            const sortedNutritionData = [...nutritionData].sort((a, b) => parseDate(b[0]) - parseDate(a[0]));
+            
+            // Create table
+            const table = document.createElement('table');
+            table.className = 'maintenance-table';
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['תאריך', '3 ימים', '5 ימים', '7 ימים', '9 ימים', '14 ימים', 'ממוצע', 'ממוצע ללא קיצוניים'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.minWidth = '100px';
+                if (headerText === 'ממוצע') {
+                    th.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
+                } else if (headerText === 'ממוצע ללא קיצוניים') {
+                    th.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                }
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            // Calculate maintenance for all available dates
+            const windows = [3, 5, 7, 9, 14];
+            const allHistoryData = [];
+            
+            // Get all available dates from the beginning of data
+            // We need at least 14 days of previous data for the 14-day window calculation
+            const maxWindowDays = Math.max(...windows);
+            const totalDataLength = sortedBodyData.length;
+            
+            const startIndex = maxWindowDays;
+            const endIndex = totalDataLength;
+            
+            for (let i = endIndex - 1; i >= startIndex; i--) {
+                const currentDateIndex = i;
+                const currentDate = sortedBodyData[currentDateIndex][0];
+                
+                const rowData = {
+                    date: currentDate,
+                    maintenance: []
+                };
+                
+                let rowSum = 0;
+                let rowCount = 0;
+                const rowValues = [];
+                
+                // Calculate maintenance for each window
+                windows.forEach(windowDays => {
+                    // Current window: from current date going forward
+                    const currentWindowBody = sortedBodyData.slice(currentDateIndex, currentDateIndex + windowDays);
+                    const currentWindowNutrition = sortedNutritionData.slice(currentDateIndex, currentDateIndex + windowDays);
+                    
+                    // Previous window: the window before the current window
+                    const previousWindowBody = sortedBodyData.slice(currentDateIndex + windowDays, currentDateIndex + windowDays * 2);
+                    const previousWindowNutrition = sortedNutritionData.slice(currentDateIndex + windowDays, currentDateIndex + windowDays * 2);
+                    
+                    if (currentWindowBody.length >= windowDays && previousWindowBody.length >= windowDays) {
+                        // Calculate averages
+                        const currentAvgWeight = currentWindowBody.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+                        const currentAvgCalories = currentWindowNutrition.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+                        const currentAvgSteps = currentWindowNutrition.reduce((sum, row) => sum + parseFloat(row[6]), 0) / windowDays;
+                        const previousAvgWeight = previousWindowBody.reduce((sum, row) => sum + parseFloat(row[1]), 0) / windowDays;
+                        
+                        // Calculate maintenance
+                        const weightLoss = previousAvgWeight - currentAvgWeight;
+                        const weightLossCalories = (weightLoss * 7700) / windowDays;
+                        const stepsCalories = currentAvgSteps / 25;
+                        const realMaintenance = currentAvgCalories + weightLossCalories - stepsCalories;
+                        
+                        rowData.maintenance.push(realMaintenance);
+                        rowSum += realMaintenance;
+                        rowCount++;
+                        rowValues.push(realMaintenance);
+                    } else {
+                        rowData.maintenance.push(null);
+                    }
+                });
+                
+                // Calculate row average
+                rowData.average = rowCount > 0 ? rowSum / rowCount : null;
+                
+                // Calculate trimmed average (excluding highest and lowest values)
+                if (rowValues.length >= 3) {
+                    const sortedValues = [...rowValues].sort((a, b) => a - b);
+                    const trimmedValues = sortedValues.slice(1, -1); // Remove first (lowest) and last (highest)
+                    rowData.trimmedAverage = trimmedValues.reduce((sum, val) => sum + val, 0) / trimmedValues.length;
+                } else {
+                    rowData.trimmedAverage = null;
+                }
+                
+                allHistoryData.push(rowData);
+            }
+            
+            // Display the data
+            allHistoryData.forEach((rowData, index) => {
+                const row = document.createElement('tr');
+                
+                // Date cell
+                const dateCell = document.createElement('td');
+                dateCell.className = 'date-cell';
+                dateCell.textContent = rowData.date;
+                row.appendChild(dateCell);
+                
+                // Maintenance cells
+                rowData.maintenance.forEach((maintenance, index) => {
+                    const cell = document.createElement('td');
+                    cell.className = 'maintenance-value';
+                    
+                    if (maintenance !== null) {
+                        cell.textContent = maintenance.toFixed(0);
+                        
+                        // Color coding
+                        if (maintenance < 1500) {
+                            cell.classList.add('low');
+                        } else if (maintenance > 2500) {
+                            cell.classList.add('high');
+                        }
+                    } else {
+                        cell.textContent = '-';
+                        cell.style.color = '#ccc';
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                // Average cell
+                const avgCell = document.createElement('td');
+                avgCell.className = 'maintenance-value';
+                avgCell.style.background = '#fff3e0';
+                avgCell.style.fontWeight = 'bold';
+                
+                if (rowData.average !== null) {
+                    avgCell.textContent = rowData.average.toFixed(0);
+                    
+                    if (rowData.average < 1500) {
+                        avgCell.classList.add('low');
+                    } else if (rowData.average > 2500) {
+                        avgCell.classList.add('high');
+                    }
+                } else {
+                    avgCell.textContent = '-';
+                    avgCell.style.color = '#ccc';
+                }
+                
+                row.appendChild(avgCell);
+                
+                // Trimmed average cell
+                const trimmedAvgCell = document.createElement('td');
+                trimmedAvgCell.className = 'maintenance-value';
+                trimmedAvgCell.style.background = '#e8f5e8';
+                trimmedAvgCell.style.fontWeight = 'bold';
+                
+                if (rowData.trimmedAverage !== null) {
+                    trimmedAvgCell.textContent = rowData.trimmedAverage.toFixed(0);
+                    
+                    if (rowData.trimmedAverage < 1500) {
+                        trimmedAvgCell.classList.add('low');
+                    } else if (rowData.trimmedAverage > 2500) {
+                        trimmedAvgCell.classList.add('high');
+                    }
+                } else {
+                    trimmedAvgCell.textContent = '-';
+                    trimmedAvgCell.style.color = '#ccc';
+                }
+                
+                row.appendChild(trimmedAvgCell);
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            tableContainer.innerHTML = '';
+            tableContainer.appendChild(table);
+            
+            // Store data for Excel export
+            window.fullHistoryData = allHistoryData;
+        }
+        
+        function exportToExcel() {
+            const table = document.querySelector('#summaryTableContainer table');
+            if (!table) {
+                alert('אין נתונים לייצוא');
+                return;
+            }
+            
+            // Create a new workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Convert table to worksheet
+            const ws = XLSX.utils.table_to_sheet(table);
+            
+            // Set number format for maintenance values (columns B-G)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let row = range.s.r + 1; row <= range.e.r; row++) {
+                for (let col = range.s.c + 1; col <= range.e.c; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({r: row, c: col});
+                    if (ws[cellAddress] && ws[cellAddress].v && !isNaN(ws[cellAddress].v)) {
+                        ws[cellAddress].z = '0'; // Number format
+                    }
+                }
+            }
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'היסטוריית תחזוקה');
+            
+            // Save the file
+            XLSX.writeFile(wb, 'היסטוריית_תחזוקה_סיכום.xlsx');
+        }
+        
+        function exportFullHistoryToExcel() {
+            if (!window.fullHistoryData || window.fullHistoryData.length === 0) {
+                alert('אין נתונים לייצוא');
+                return;
+            }
+            
+            // Create a new workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Prepare data for Excel with proper number formatting
+            const excelData = [];
+            
+            // Add headers
+            excelData.push(['תאריך', '3 ימים', '5 ימים', '7 ימים', '9 ימים', '14 ימים', 'ממוצע', 'ממוצע ללא קיצוניים']);
+            
+            // Add data rows
+            window.fullHistoryData.forEach(rowData => {
+                const row = [rowData.date];
+                rowData.maintenance.forEach(maintenance => {
+                    row.push(maintenance !== null ? parseFloat(maintenance.toFixed(0)) : '');
+                });
+                row.push(rowData.average !== null ? parseFloat(rowData.average.toFixed(0)) : '');
+                row.push(rowData.trimmedAverage !== null ? parseFloat(rowData.trimmedAverage.toFixed(0)) : '');
+                excelData.push(row);
+            });
+            
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            
+            // Set number format for maintenance values (columns B-G)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let row = range.s.r + 1; row <= range.e.r; row++) {
+                for (let col = range.s.c + 1; col <= range.e.c; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({r: row, c: col});
+                    if (ws[cellAddress] && ws[cellAddress].v && !isNaN(ws[cellAddress].v)) {
+                        ws[cellAddress].z = '0'; // Number format
+                    }
+                }
+            }
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'היסטוריה מלאה');
+            
+            // Save the file
+            XLSX.writeFile(wb, 'היסטוריית_תחזוקה_מלאה.xlsx');
+        }
+        
         function showError(message) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('error').style.display = 'block';

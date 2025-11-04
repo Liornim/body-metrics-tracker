@@ -332,11 +332,11 @@
             <div class="targets-grid">
                 <div class="target-input">
                     <label>🔥 קלוריות</label>
-                    <input type="number" id="caloriesTarget" value="2400" min="0" step="10">
+                    <input type="number" id="caloriesTarget" value="2034" min="0" step="10">
                 </div>
                 <div class="target-input">
                     <label>⚡ קלוריות נטו</label>
-                    <input type="number" id="netCaloriesTarget" value="2000" min="0" step="10">
+                    <input type="number" id="netCaloriesTarget" value="2034" min="0" step="10">
                 </div>
                 <div class="target-input">
                     <label>💪 חלבון (גרם)</label>
@@ -385,8 +385,8 @@
         
         // Default targets
         let TARGETS = {
-            calories: 2400,
-            netCalories: 2000,
+            calories: 2034,
+            netCalories: 2034,
             protein: 160,
             fat: 53,
             carbs: 325,
@@ -395,7 +395,7 @@
         
         let nutritionData = [];
         
-        const WINDOWS = [3, 5, 7, 9, 14];
+        const WINDOWS = [3, 5, 7, 9, 10, 11, 12, 13, 14];
         
         // Load data on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -405,8 +405,8 @@
         // Update targets from form inputs
         function updateTargets() {
             TARGETS = {
-                calories: parseInt(document.getElementById('caloriesTarget').value) || 2400,
-                netCalories: parseInt(document.getElementById('netCaloriesTarget').value) || 2000,
+                calories: parseInt(document.getElementById('caloriesTarget').value) || 2034,
+                netCalories: parseInt(document.getElementById('netCaloriesTarget').value) || 2034,
                 protein: parseInt(document.getElementById('proteinTarget').value) || 160,
                 fat: parseInt(document.getElementById('fatTarget').value) || 53,
                 carbs: parseInt(document.getElementById('carbsTarget').value) || 325,
