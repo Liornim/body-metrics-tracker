@@ -307,11 +307,11 @@
             <div class="config-grid">
                 <div class="input-group">
                     <label>🔥 TDEE (סך קלוריות יומי)</label>
-                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                    <input type="number" id="tdeeValue" value="2034" min="0" step="10">
                 </div>
                 <div class="input-group">
                     <label>🎯 יעד קלורי יומי</label>
-                    <input type="number" id="calorieTargetValue" value="2257" min="0" step="10">
+                    <input type="number" id="calorieTargetValue" value="1884" min="0" step="10">
                 </div>
                 <div class="input-group">
                     <label>💪 חלבון (גרם) - לשניהם</label>
@@ -325,17 +325,21 @@
             
             <div class="buttons">
                 <button onclick="calculateMacros()">חשב מקרונוטריינטים</button>
-                <button onclick="calculateFromWeeklyDeficit()" class="secondary-button" style="background: #95a5a6;">חשב מיעד שבועי</button>
             </div>
             
-            <div id="weeklyDeficitGroup" style="display: none; margin-top: 20px;">
+            <div id="weeklyDeficitGroup" style="display: block; margin-top: 20px;">
                 <div class="config-grid">
                     <div class="input-group">
                         <label>🎯 גירעון קלורי שבועי (קלוריות לשבוע)</label>
-                        <input type="number" id="weeklyDeficitValue" value="1000" min="0" step="10">
+                        <input type="number" id="weeklyDeficitValue" value="1050" min="0" step="10">
+                    </div>
+                    <div class="input-group">
+                        <label>⚖️ גירעון שבועי בגרמים</label>
+                        <input type="number" id="gramsDeficit" value="" min="0" step="10" placeholder="לדוגמה: 100">
                     </div>
                 </div>
                 <div class="buttons">
+                    <button onclick="calculateFromGrams()">חשב מיגרמים</button>
                     <button onclick="calculateWithWeeklyDeficit()">חשב</button>
                 </div>
             </div>
@@ -373,8 +377,8 @@
 
     <script>
         // Default values
-        let TDEE = 2400;
-        let CALORIE_TARGET = 2257; // TDEE - (1000/7) = 2400 - 143 = 2257
+        let TDEE = 2034;
+        let CALORIE_TARGET = 1884;
         let PROTEIN = 160; // grams, fixed for both
         let FAT_PERCENT = 25; // percentage of calories
         
@@ -386,8 +390,8 @@
         
         // Calculate macros based on current inputs
         function calculateMacros() {
-            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
-            CALORIE_TARGET = parseFloat(document.getElementById('calorieTargetValue').value) || 2257;
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2034;
+            CALORIE_TARGET = parseFloat(document.getElementById('calorieTargetValue').value) || 1884;
             PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
             FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
             
@@ -399,15 +403,36 @@
             }
         }
         
-        // Calculate from weekly deficit
-        function calculateFromWeeklyDeficit() {
-            document.getElementById('weeklyDeficitGroup').style.display = 'block';
+        // Calculate weekly deficit from grams
+        // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+        function calculateFromGrams() {
+            const gramsDeficit = parseFloat(document.getElementById('gramsDeficit').value) || 0;
+            
+            if (gramsDeficit <= 0) {
+                alert('אנא הכנס גירעון בגרמים חיובי');
+                return;
+            }
+            
+            // Formula: (Grams × 7.7 ÷ 7) - (10000/25)
+            // This gives daily deficit from food, multiply by 7 for weekly
+            // 10000/25 = 400 (steps calories per day)
+            const stepsCaloriesPerDay = 10000 / 25;
+            const dailyDeficitFromGrams = (gramsDeficit * 7.7 / 7) - stepsCaloriesPerDay;
+            const weeklyDeficitFromGrams = dailyDeficitFromGrams * 7;
+            
+            // Update the weekly deficit target input
+            document.getElementById('weeklyDeficitValue').value = Math.round(weeklyDeficitFromGrams);
+            
+            console.log(`Calculated from ${gramsDeficit}g: Weekly deficit = ${Math.round(weeklyDeficitFromGrams)} calories`);
+            
+            // Automatically calculate with the new weekly deficit
+            calculateWithWeeklyDeficit();
         }
         
         // Calculate with weekly deficit
         function calculateWithWeeklyDeficit() {
-            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
-            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1000;
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2034;
+            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
             PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
             FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
             
@@ -528,7 +553,7 @@
         // Nutrition data storage
         let nutritionData = [];
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
-        const WINDOWS = [3, 5, 7, 9, 14];
+        const WINDOWS = [3, 5, 7, 8, 9, 10, 11, 12, 13, 14];
         
         // Load actual nutrition data
         async function loadActualData() {

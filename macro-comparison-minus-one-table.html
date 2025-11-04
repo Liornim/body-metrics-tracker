@@ -228,7 +228,7 @@
             <div class="goals-grid">
                 <div class="goal-input">
                     <label>🔥 TDEE (סך קלוריות יומי)</label>
-                    <input type="number" id="tdeeValue" value="2400" min="0" step="10">
+                    <input type="number" id="tdeeValue" value="2034" min="0" step="10">
                 </div>
                 <div class="goal-input">
                     <label>🎯 יעד קלורי יומי</label>
@@ -350,7 +350,7 @@
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
         
         // Default values
-        let TDEE = 2400;
+        let TDEE = 2034;
         let CALORIE_TARGET = 2250; // TDEE - (1050/7) = 2400 - 150 = 2250
         let PROTEIN = 160; // grams, fixed for both
         let FAT_PERCENT = 25; // percentage of calories
@@ -367,7 +367,7 @@
         
         // Calculate macros based on current inputs
         function calculateMacros() {
-            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2034;
             CALORIE_TARGET = parseFloat(document.getElementById('calorieTargetValue').value) || 2250;
             PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
             FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
@@ -397,7 +397,7 @@
         
         // Calculate with weekly deficit
         function calculateWithWeeklyDeficit() {
-            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2400;
+            TDEE = parseFloat(document.getElementById('tdeeValue').value) || 2034;
             const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
             PROTEIN = parseFloat(document.getElementById('proteinValue').value) || 160;
             FAT_PERCENT = parseFloat(document.getElementById('fatPercentValue').value) || 25;
