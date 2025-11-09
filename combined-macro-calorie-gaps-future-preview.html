@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>סיכום פערים - מקרונוטריינטים וקלוריות עם TDEE מחישוב משקל</title>
+    <title>תצוגה מקדימה - סיכום פערים מחר</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -124,6 +124,27 @@
             background: #95a5a6;
         }
         
+        .today-input-section {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .today-input-section h3 {
+            color: #e65100;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .today-input-section p {
+            color: #424242;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
         .loading {
             text-align: center;
             color: white;
@@ -232,8 +253,45 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 סיכום פערים - מקרונוטריינטים וקלוריות</h1>
-            <p>פער מול יעד למקרונוטריינטים ופער מול יעד ו-TDEE לקלוריות</p>
+            <h1>🔮 תצוגה מקדימה - סיכום פערים מחר</h1>
+            <p>הזן ערכים היפותטיים להיום וצפה איך הטבלה תיראה מחר</p>
+        </div>
+        
+        <!-- Today's Input Section -->
+        <div class="goals-config">
+            <div class="today-input-section">
+                <h3>🍽️ הזן ערכים היפותטיים להיום</h3>
+                <p>הזן את הערכים שאתה מתכנן לאכול היום, והטבלה תראה איך הפערים ייראו מחר. בחר שיטת חישוב ברירת מחדל.</p>
+                <div class="goals-grid">
+                    <div class="goal-input">
+                        <label>📋 בחר שיטת חישוב ברירת מחדל</label>
+                        <select id="defaultMethodSelect" onchange="applyDefaultMethod()">
+                            <option value="gaps">לפי מקרונוטריינטים</option>
+                            <option value="targets">לפי יעדים מהגדרות</option>
+                        </select>
+                    </div>
+                    <div class="goal-input">
+                        <label>🔥 קלוריות להיום</label>
+                        <input type="number" id="todayCalories" value="" min="0" step="10" placeholder="ממוצע" onchange="updatePreview()">
+                    </div>
+                    <div class="goal-input">
+                        <label>💪 חלבון להיום (גרם)</label>
+                        <input type="number" id="todayProtein" value="" min="0" step="1" placeholder="ממוצע" onchange="updatePreview()">
+                    </div>
+                    <div class="goal-input">
+                        <label>🍯 שומן להיום (גרם)</label>
+                        <input type="number" id="todayFat" value="" min="0" step="1" placeholder="ממוצע" onchange="updatePreview()">
+                    </div>
+                    <div class="goal-input">
+                        <label>🌾 פחמימות נטו להיום (גרם)</label>
+                        <input type="number" id="todayCarbs" value="" min="0" step="1" placeholder="ממוצע" onchange="updatePreview()">
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button onclick="updatePreview()">🔄 עדכן תצוגה מקדימה</button>
+                    <button onclick="resetToAverages()" class="secondary-button">↩️ אפס לממוצעים</button>
+                </div>
+            </div>
         </div>
         
         <!-- TDEE and Target Configuration -->
@@ -293,7 +351,7 @@
         
         <div id="content" style="display: none;">
             <div class="summary-container" style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                <h3 style="margin-top: 0; color: #2c3e50; text-align: right;">📊 סיכום</h3>
+                <h3 style="margin-top: 0; color: #2c3e50; text-align: right;">📊 סיכום (תצוגה מקדימה למחר)</h3>
                 <div class="summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
                     <div class="summary-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע פער חלבון</div>
@@ -315,6 +373,55 @@
                         <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">ממוצע פער קלוריות מול TDEE</div>
                         <div id="avgTdeeGap" style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">-</div>
                     </div>
+                </div>
+            </div>
+            
+            <div class="comparison-container" style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #fff3cd, #ffe69c); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #2c3e50; text-align: right;">📈 השוואה: לפני ואחרי</h3>
+                <p style="text-align: right; color: #666; margin-bottom: 15px; font-size: 0.9rem;">השוואה בין הפערים הנוכחיים (לפני הוספת היום) לבין הפערים הצפויים מחר (עם הערכים ההיפותטיים)</p>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                <th style="padding: 12px; text-align: right; font-weight: 600;">מדד</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">פער נוכחי (ממוצע)</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">פער צפוי מחר (ממוצע)</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">שיפור</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px; text-align: right; font-weight: 600; border-bottom: 1px solid #eee;">💪 חלבון</td>
+                                <td id="currentAvgProteinGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="futureAvgProteinGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="improvementProtein" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; text-align: right; font-weight: 600; border-bottom: 1px solid #eee;">🍯 שומן</td>
+                                <td id="currentAvgFatGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="futureAvgFatGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="improvementFat" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; text-align: right; font-weight: 600; border-bottom: 1px solid #eee;">🌾 פחמימות נטו</td>
+                                <td id="currentAvgCarbsGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="futureAvgCarbsGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="improvementCarbs" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; text-align: right; font-weight: 600; border-bottom: 1px solid #eee;">🔥 קלוריות מול יעד</td>
+                                <td id="currentAvgCalorieTargetGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="futureAvgCalorieTargetGap" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee;">-</td>
+                                <td id="improvementCalorieTarget" style="padding: 10px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; text-align: right; font-weight: 600;">🔥 קלוריות מול TDEE</td>
+                                <td id="currentAvgTdeeGap" style="padding: 10px; text-align: center;">-</td>
+                                <td id="futureAvgTdeeGap" style="padding: 10px; text-align: center;">-</td>
+                                <td id="improvementTdee" style="padding: 10px; text-align: center; font-weight: bold;">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
@@ -361,8 +468,10 @@
         let FAT_PERCENT = 25;
         
         let nutritionData = [];
+        let originalNutritionData = []; // Keep original data
         let weightData = [];
         let windowTdeeMap = {};
+        let averageValues = { calories: 0, protein: 0, fat: 0, carbs: 0 };
         
         const WINDOWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         const windowSizes = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
@@ -386,6 +495,13 @@
             const date = parseDate(dateStr);
             if (!date) return null;
             date.setDate(date.getDate() - 1);
+            return formatDate(date);
+        }
+        
+        function addOneDay(dateStr) {
+            const date = parseDate(dateStr);
+            if (!date) return null;
+            date.setDate(date.getDate() + 1);
             return formatDate(date);
         }
         
@@ -574,6 +690,269 @@
             CALORIE_TARGET = Math.round(calorieTarget);
         }
         
+        // Calculate averages from current data
+        function calculateAverages() {
+            if (!originalNutritionData || originalNutritionData.length === 0) return;
+            
+            const hasHeader = originalNutritionData[0] && originalNutritionData[0][0] && 
+                             (typeof originalNutritionData[0][0] === 'string') && 
+                             (originalNutritionData[0][0].includes('תאריך') || originalNutritionData[0][0].includes('Date'));
+            
+            const startIndex = hasHeader ? 1 : 0;
+            const dataToUse = originalNutritionData.slice(startIndex, startIndex + 7); // Use last 7 days for average
+            
+            let totalCalories = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0;
+            let validDays = 0;
+            
+            dataToUse.forEach(row => {
+                if (row && row.length >= 7) {
+                    const calories = parseFloat(row[1]) || 0;
+                    const fat = parseFloat(row[2]) || 0;
+                    const carbs = parseFloat(row[3]) || 0;
+                    const protein = parseFloat(row[4]) || 0;
+                    const fiber = parseFloat(row[5]) || 0;
+                    const netCarbs = carbs - fiber;
+                    
+                    if (calories > 0) {
+                        totalCalories += calories;
+                        totalProtein += protein;
+                        totalFat += fat;
+                        totalCarbs += netCarbs;
+                        validDays++;
+                    }
+                }
+            });
+            
+            if (validDays > 0) {
+                averageValues.calories = Math.round(totalCalories / validDays);
+                averageValues.protein = Math.round(totalProtein / validDays);
+                averageValues.fat = Math.round(totalFat / validDays);
+                averageValues.carbs = Math.round(totalCarbs / validDays);
+                
+                // Set default values in inputs
+                document.getElementById('todayCalories').placeholder = averageValues.calories;
+                document.getElementById('todayProtein').placeholder = averageValues.protein;
+                document.getElementById('todayFat').placeholder = averageValues.fat;
+                document.getElementById('todayCarbs').placeholder = averageValues.carbs;
+            }
+        }
+        
+        // Add today's data to nutrition data
+        function addTodayData() {
+            const caloriesInput = document.getElementById('todayCalories').value;
+            const proteinInput = document.getElementById('todayProtein').value;
+            const fatInput = document.getElementById('todayFat').value;
+            const carbsInput = document.getElementById('todayCarbs').value;
+            
+            // Use input value if provided, otherwise use average
+            const todayCalories = caloriesInput !== '' ? parseFloat(caloriesInput) : (averageValues.calories || 0);
+            const todayProtein = proteinInput !== '' ? parseFloat(proteinInput) : (averageValues.protein || 0);
+            const todayFat = fatInput !== '' ? parseFloat(fatInput) : (averageValues.fat || 0);
+            const todayCarbs = carbsInput !== '' ? parseFloat(carbsInput) : (averageValues.carbs || 0);
+            
+            if (todayCalories === 0 && todayProtein === 0 && todayFat === 0 && todayCarbs === 0) {
+                // No input and no averages, use original data
+                nutritionData = [...originalNutritionData];
+                return;
+            }
+            
+            // Get today's date (most recent date + 1 day)
+            const hasHeader = originalNutritionData[0] && originalNutritionData[0][0] && 
+                             (typeof originalNutritionData[0][0] === 'string') && 
+                             (originalNutritionData[0][0].includes('תאריך') || originalNutritionData[0][0].includes('Date'));
+            
+            const startIndex = hasHeader ? 1 : 0;
+            let todayDate;
+            
+            if (originalNutritionData.length > startIndex) {
+                const mostRecentDate = originalNutritionData[startIndex][0];
+                todayDate = addOneDay(mostRecentDate);
+            } else {
+                // Use current date if no data
+                const now = new Date();
+                todayDate = formatDate(now);
+            }
+            
+            // Calculate fiber (assume 10% of carbs as fiber for net carbs calculation)
+            const fiber = Math.round(todayCarbs * 0.1);
+            const totalCarbs = todayCarbs + fiber;
+            
+            // Steps - use average from recent data or 0
+            const avgSteps = calculateAverageSteps();
+            
+            // Create today's row: [date, calories, fat, carbs, protein, fiber, steps]
+            const todayRow = [
+                todayDate,
+                todayCalories,
+                todayFat,
+                totalCarbs,
+                todayProtein,
+                fiber,
+                avgSteps
+            ];
+            
+            // Prepend today's data to nutrition data (newest first)
+            nutritionData = [...originalNutritionData];
+            if (hasHeader) {
+                nutritionData = [originalNutritionData[0], todayRow, ...originalNutritionData.slice(1)];
+            } else {
+                nutritionData = [todayRow, ...originalNutritionData];
+            }
+        }
+        
+        // Calculate average steps from recent data
+        function calculateAverageSteps() {
+            if (!originalNutritionData || originalNutritionData.length === 0) return 0;
+            
+            const hasHeader = originalNutritionData[0] && originalNutritionData[0][0] && 
+                             (typeof originalNutritionData[0][0] === 'string') && 
+                             (originalNutritionData[0][0].includes('תאריך') || originalNutritionData[0][0].includes('Date'));
+            
+            const startIndex = hasHeader ? 1 : 0;
+            const dataToUse = originalNutritionData.slice(startIndex, startIndex + 7);
+            
+            let totalSteps = 0;
+            let validDays = 0;
+            
+            dataToUse.forEach(row => {
+                if (row && row.length >= 7) {
+                    const steps = parseFloat(row[6]) || 0;
+                    if (steps > 0) {
+                        totalSteps += steps;
+                        validDays++;
+                    }
+                }
+            });
+            
+            return validDays > 0 ? Math.round(totalSteps / validDays) : 0;
+        }
+        
+        // Update preview
+        function updatePreview() {
+            addTodayData();
+            if (nutritionData.length > 0) {
+                displayData();
+            }
+        }
+        
+        // Reset to averages
+        function resetToAverages() {
+            document.getElementById('todayCalories').value = '';
+            document.getElementById('todayProtein').value = '';
+            document.getElementById('todayFat').value = '';
+            document.getElementById('todayCarbs').value = '';
+            updatePreview();
+        }
+        
+        // Apply default method based on selection
+        function applyDefaultMethod() {
+            const method = document.getElementById('defaultMethodSelect').value;
+            if (method === 'gaps') {
+                calculateDefaultsFromGaps();
+            } else if (method === 'targets') {
+                calculateDefaultsFromTargets();
+            }
+            // Update preview after setting defaults
+            updatePreview();
+        }
+        
+        // Calculate defaults from table gaps
+        function calculateDefaultsFromGaps() {
+            // Get gaps from the table by recalculating them (before adding today's data)
+            const savedNutritionData = [...nutritionData];
+            nutritionData = [...originalNutritionData];
+            
+            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
+            const selectedTdee = TDEE;
+            const calorieTargetForWindow = selectedTdee - (weeklyDeficit / 7);
+            const targetMacros = calculateMacrosForCalories(calorieTargetForWindow);
+            
+            const allProteinGaps = [];
+            const allFatGaps = [];
+            const allCarbsGaps = [];
+            
+            WINDOWS.forEach(windowDays => {
+                const actuals = calculateWindowActuals(windowDays);
+                if (!actuals) return;
+                
+                const cumulativeTargetProtein = targetMacros.protein * windowDays;
+                const cumulativeTargetFat = targetMacros.fat * windowDays;
+                const cumulativeTargetCarbs = targetMacros.carbs * windowDays;
+                
+                const proteinGap = cumulativeTargetProtein - actuals.totalProtein;
+                const fatGap = cumulativeTargetFat - actuals.totalFat;
+                const carbsGap = cumulativeTargetCarbs - actuals.totalNetCarbs;
+                
+                allProteinGaps.push(proteinGap);
+                allFatGaps.push(fatGap);
+                allCarbsGaps.push(carbsGap);
+            });
+            
+            // Restore nutrition data
+            nutritionData = savedNutritionData;
+            
+            if (allProteinGaps.length === 0) return;
+            
+            // Protein: largest gap in all the table
+            const defaultProtein = Math.max(...allProteinGaps);
+            
+            // Fat: lowest gap in all the table, or target if lower, or zero if minus
+            const lowestFatGap = Math.min(...allFatGaps);
+            const dailyFatTarget = targetMacros.fat;
+            let defaultFat = lowestFatGap;
+            if (defaultFat < 0) {
+                defaultFat = 0;
+            } else if (defaultFat > dailyFatTarget) {
+                defaultFat = dailyFatTarget;
+            }
+            
+            // Carbs: lowest gap in all the table, or target if lower, or zero if minus
+            const lowestCarbsGap = Math.min(...allCarbsGaps);
+            const dailyCarbsTarget = targetMacros.carbs;
+            let defaultCarbs = lowestCarbsGap;
+            if (defaultCarbs < 0) {
+                defaultCarbs = 0;
+            } else if (defaultCarbs > dailyCarbsTarget) {
+                defaultCarbs = dailyCarbsTarget;
+            }
+            
+            // Calories: calculated from the macros (protein * 4 + fat * 9 + carbs * 4)
+            const defaultCalories = Math.round((defaultProtein * 4) + (defaultFat * 9) + (defaultCarbs * 4));
+            
+            // Set the values
+            document.getElementById('todayCalories').value = defaultCalories;
+            document.getElementById('todayProtein').value = Math.round(defaultProtein);
+            document.getElementById('todayFat').value = Math.round(defaultFat);
+            document.getElementById('todayCarbs').value = Math.round(defaultCarbs);
+        }
+        
+        // Calculate defaults from targets in הגדרות
+        function calculateDefaultsFromTargets() {
+            // Get values from הגדרות section
+            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
+            const selectedTdee = TDEE;
+            const calorieTarget = selectedTdee - (weeklyDeficit / 7);
+            const proteinTarget = parseFloat(document.getElementById('proteinValue').value) || 160;
+            const fatPercent = parseFloat(document.getElementById('fatPercentValue').value) || 25;
+            
+            // Calculate fat from calories and fat percentage
+            const fatCalories = calorieTarget * (fatPercent / 100);
+            const fatTarget = fatCalories / 9;
+            
+            // Calculate protein calories
+            const proteinCalories = proteinTarget * 4;
+            
+            // Calculate remaining calories for carbs
+            const remainingCalories = calorieTarget - (proteinCalories + fatCalories);
+            const carbsTarget = remainingCalories / 4;
+            
+            // Set the values
+            document.getElementById('todayCalories').value = Math.round(calorieTarget);
+            document.getElementById('todayProtein').value = Math.round(proteinTarget);
+            document.getElementById('todayFat').value = Math.round(fatTarget);
+            document.getElementById('todayCarbs').value = Math.round(carbsTarget);
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             calculateMacros();
             loadData();
@@ -710,11 +1089,16 @@
                     weight: parseFloat(row[1])
                 })).filter(item => item.weight > 0 && item.date);
                 
-                nutritionData = nutritionDataResponse.data;
+                originalNutritionData = nutritionDataResponse.data;
+                nutritionData = [...originalNutritionData];
                 
+                // Calculate averages and set defaults
+                calculateAverages();
+                
+                // Calculate TDEE for each window (using original data)
                 windowTdeeMap = {};
                 windowSizes.forEach(windowSize => {
-                    const netTdee = calculateNetTDEE(windowSize, weightData, nutritionData);
+                    const netTdee = calculateNetTDEE(windowSize, weightData, originalNutritionData);
                     if (netTdee !== null) {
                         windowTdeeMap[windowSize] = netTdee;
                     }
@@ -742,7 +1126,15 @@
                     updateTdeeFromSelection();
                 }
                 
+                // Calculate defaults based on selected method (default to gaps method)
+                applyDefaultMethod();
+                
+                // Add today's data with calculated defaults
+                addTodayData();
+                
+                // Display data
                 displayData();
+                
                 loading.style.display = 'none';
                 content.style.display = 'block';
             } catch (error) {
@@ -820,11 +1212,117 @@
             });
             
             if (allProteinGaps.length > 0) {
-                document.getElementById('avgProteinGap').textContent = (allProteinGaps.reduce((a, b) => a + b, 0) / allProteinGaps.length).toFixed(0);
-                document.getElementById('avgFatGap').textContent = (allFatGaps.reduce((a, b) => a + b, 0) / allFatGaps.length).toFixed(0);
-                document.getElementById('avgCarbsGap').textContent = (allCarbsGaps.reduce((a, b) => a + b, 0) / allCarbsGaps.length).toFixed(0);
-                document.getElementById('avgCalorieTargetGap').textContent = (allCalorieTargetGaps.reduce((a, b) => a + b, 0) / allCalorieTargetGaps.length).toFixed(0);
-                document.getElementById('avgTdeeGap').textContent = (allTdeeGaps.reduce((a, b) => a + b, 0) / allTdeeGaps.length).toFixed(0);
+                // Future gaps (with today added)
+                const futureAvgProtein = (allProteinGaps.reduce((a, b) => a + b, 0) / allProteinGaps.length);
+                const futureAvgFat = (allFatGaps.reduce((a, b) => a + b, 0) / allFatGaps.length);
+                const futureAvgCarbs = (allCarbsGaps.reduce((a, b) => a + b, 0) / allCarbsGaps.length);
+                const futureAvgCalorieTarget = (allCalorieTargetGaps.reduce((a, b) => a + b, 0) / allCalorieTargetGaps.length);
+                const futureAvgTdee = (allTdeeGaps.reduce((a, b) => a + b, 0) / allTdeeGaps.length);
+                
+                document.getElementById('avgProteinGap').textContent = futureAvgProtein.toFixed(0);
+                document.getElementById('avgFatGap').textContent = futureAvgFat.toFixed(0);
+                document.getElementById('avgCarbsGap').textContent = futureAvgCarbs.toFixed(0);
+                document.getElementById('avgCalorieTargetGap').textContent = futureAvgCalorieTarget.toFixed(0);
+                document.getElementById('avgTdeeGap').textContent = futureAvgTdee.toFixed(0);
+                
+                // Calculate current gaps (before adding today)
+                calculateCurrentGapsForComparison(futureAvgProtein, futureAvgFat, futureAvgCarbs, futureAvgCalorieTarget, futureAvgTdee);
+            }
+        }
+        
+        // Calculate current gaps for comparison (before adding today)
+        function calculateCurrentGapsForComparison(futureAvgProtein, futureAvgFat, futureAvgCarbs, futureAvgCalorieTarget, futureAvgTdee) {
+            const savedNutritionData = [...nutritionData];
+            nutritionData = [...originalNutritionData];
+            
+            const weeklyDeficit = parseFloat(document.getElementById('weeklyDeficitValue').value) || 1050;
+            const selectedTdee = TDEE;
+            const calorieTargetForWindow = selectedTdee - (weeklyDeficit / 7);
+            const targetMacros = calculateMacrosForCalories(calorieTargetForWindow);
+            
+            const allCurrentProteinGaps = [];
+            const allCurrentFatGaps = [];
+            const allCurrentCarbsGaps = [];
+            const allCurrentCalorieTargetGaps = [];
+            const allCurrentTdeeGaps = [];
+            
+            WINDOWS.forEach(windowDays => {
+                const actuals = calculateWindowActuals(windowDays);
+                if (!actuals) return;
+                
+                const cumulativeTargetProtein = targetMacros.protein * windowDays;
+                const cumulativeTargetFat = targetMacros.fat * windowDays;
+                const cumulativeTargetCarbs = targetMacros.carbs * windowDays;
+                
+                const proteinGap = cumulativeTargetProtein - actuals.totalProtein;
+                const fatGap = cumulativeTargetFat - actuals.totalFat;
+                const carbsGap = cumulativeTargetCarbs - actuals.totalNetCarbs;
+                
+                const windowTDEE = selectedTdee * windowDays;
+                const windowDeficitTarget = (weeklyDeficit / 7) * windowDays;
+                const calorieTarget = windowTDEE - windowDeficitTarget;
+                
+                const calorieTargetGap = calorieTarget - actuals.totalCalories;
+                const tdeeGap = windowTDEE - actuals.totalCalories;
+                
+                allCurrentProteinGaps.push(proteinGap);
+                allCurrentFatGaps.push(fatGap);
+                allCurrentCarbsGaps.push(carbsGap);
+                allCurrentCalorieTargetGaps.push(calorieTargetGap);
+                allCurrentTdeeGaps.push(tdeeGap);
+            });
+            
+            // Restore nutrition data
+            nutritionData = savedNutritionData;
+            
+            if (allCurrentProteinGaps.length > 0) {
+                // Current gaps (before adding today)
+                const currentAvgProtein = (allCurrentProteinGaps.reduce((a, b) => a + b, 0) / allCurrentProteinGaps.length);
+                const currentAvgFat = (allCurrentFatGaps.reduce((a, b) => a + b, 0) / allCurrentFatGaps.length);
+                const currentAvgCarbs = (allCurrentCarbsGaps.reduce((a, b) => a + b, 0) / allCurrentCarbsGaps.length);
+                const currentAvgCalorieTarget = (allCurrentCalorieTargetGaps.reduce((a, b) => a + b, 0) / allCurrentCalorieTargetGaps.length);
+                const currentAvgTdee = (allCurrentTdeeGaps.reduce((a, b) => a + b, 0) / allCurrentTdeeGaps.length);
+                
+                // Calculate improvement (current - future, positive means improvement)
+                const improvementProtein = currentAvgProtein - futureAvgProtein;
+                const improvementFat = currentAvgFat - futureAvgFat;
+                const improvementCarbs = currentAvgCarbs - futureAvgCarbs;
+                const improvementCalorieTarget = currentAvgCalorieTarget - futureAvgCalorieTarget;
+                const improvementTdee = currentAvgTdee - futureAvgTdee;
+                
+                // Display current gaps
+                document.getElementById('currentAvgProteinGap').textContent = (currentAvgProtein >= 0 ? '+' : '') + currentAvgProtein.toFixed(0);
+                document.getElementById('currentAvgFatGap').textContent = (currentAvgFat >= 0 ? '+' : '') + currentAvgFat.toFixed(0);
+                document.getElementById('currentAvgCarbsGap').textContent = (currentAvgCarbs >= 0 ? '+' : '') + currentAvgCarbs.toFixed(0);
+                document.getElementById('currentAvgCalorieTargetGap').textContent = (currentAvgCalorieTarget >= 0 ? '+' : '') + currentAvgCalorieTarget.toFixed(0);
+                document.getElementById('currentAvgTdeeGap').textContent = (currentAvgTdee >= 0 ? '+' : '') + currentAvgTdee.toFixed(0);
+                
+                // Display future gaps
+                document.getElementById('futureAvgProteinGap').textContent = (futureAvgProtein >= 0 ? '+' : '') + futureAvgProtein.toFixed(0);
+                document.getElementById('futureAvgFatGap').textContent = (futureAvgFat >= 0 ? '+' : '') + futureAvgFat.toFixed(0);
+                document.getElementById('futureAvgCarbsGap').textContent = (futureAvgCarbs >= 0 ? '+' : '') + futureAvgCarbs.toFixed(0);
+                document.getElementById('futureAvgCalorieTargetGap').textContent = (futureAvgCalorieTarget >= 0 ? '+' : '') + futureAvgCalorieTarget.toFixed(0);
+                document.getElementById('futureAvgTdeeGap').textContent = (futureAvgTdee >= 0 ? '+' : '') + futureAvgTdee.toFixed(0);
+                
+                // Display improvement with color coding
+                const formatImprovement = (value, elementId) => {
+                    const text = (value >= 0 ? '+' : '') + value.toFixed(0);
+                    const element = document.getElementById(elementId);
+                    element.textContent = text;
+                    if (value > 0) {
+                        element.style.color = '#2e7d32'; // Green for improvement
+                    } else if (value < 0) {
+                        element.style.color = '#c62828'; // Red for worsening
+                    } else {
+                        element.style.color = '#666'; // Gray for no change
+                    }
+                };
+                
+                formatImprovement(improvementProtein, 'improvementProtein');
+                formatImprovement(improvementFat, 'improvementFat');
+                formatImprovement(improvementCarbs, 'improvementCarbs');
+                formatImprovement(improvementCalorieTarget, 'improvementCalorieTarget');
+                formatImprovement(improvementTdee, 'improvementTdee');
             }
         }
         
@@ -902,7 +1400,7 @@
             const dateStr = now.getFullYear() + '-' + 
                            String(now.getMonth() + 1).padStart(2, '0') + '-' + 
                            String(now.getDate()).padStart(2, '0');
-            link.setAttribute('download', `סיכום_פערים_${dateStr}.csv`);
+            link.setAttribute('download', `תצוגה_מקדימה_פערים_${dateStr}.csv`);
             
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
