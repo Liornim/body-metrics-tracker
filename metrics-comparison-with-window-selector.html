@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Metrics Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            border: 2px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+        .comparison-table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .today-row {
+            background-color: #e8f5e8 !important;
+            font-weight: bold;
+        }
+        .average-row {
+            background-color: #fff3cd !important;
+            font-weight: bold;
+        }
+        .difference-row {
+            background-color: #d1ecf1 !important;
+            font-weight: bold;
+        }
+        .second-group-row {
+            background-color: #e2e3e5 !important;
+            font-weight: bold;
+        }
+        .positive {
+            color: #28a745;
+        }
+        .negative {
+            color: #dc3545;
+        }
+        .neutral {
+            color: #6c757d;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .controls label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .controls select,
+        .controls input {
+            padding: 8px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        .date-picker-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .date-picker-wrapper input[type="date"] {
+            position: absolute;
+            opacity: 0;
+            z-index: 2;
+            width: 100%;
+        }
+        .date-display {
+            padding: 8px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            background-color: white;
+            min-width: 120px;
+            text-align: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>מדדים לפי חלון זמן מול ממוצע</h1>
+        
+        <div class="controls">
+            <label for="windowSelect">בחר חלון זמן:</label>
+            <select id="windowSelect" style="padding: 8px; font-size: 16px; border: 2px solid #4CAF50; border-radius: 4px;">
+                <option value="3">3 ימים</option>
+                <option value="4">4 ימים</option>
+                <option value="5">5 ימים</option>
+                <option value="6">6 ימים</option>
+                <option value="7">7 ימים</option>
+                <option value="8">8 ימים</option>
+                <option value="9">9 ימים</option>
+                <option value="10">10 ימים</option>
+                <option value="11">11 ימים</option>
+                <option value="12">12 ימים</option>
+                <option value="13">13 ימים</option>
+                <option value="14">14 ימים</option>
+            </select>
+            
+            <label for="datePicker" style="font-size: 16px; font-weight: bold; margin-left: 10px;">בחר תאריך:</label>
+            <div class="date-picker-wrapper">
+                <input type="date" id="datePicker">
+                <div id="dateDisplay" class="date-display">בחר תאריך</div>
+            </div>
+            <button onclick="loadComparisonData()">הצג השוואה</button>
+        </div>
+        
+        <div id="loading" class="loading">טוען נתונים...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="comparisonTable" style="display: none;">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>תאריך</th>
+                        <th>משקל (ק״ג)</th>
+                        <th>שריר (ק״ג)</th>
+                        <th>שומן (ק״ג)</th>
+                        <th>נוזלים (ק״ג)</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="progressChart" style="display: none; margin-top: 30px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                <!-- Weight Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 id="weightChartTitle" style="text-align: center; margin-bottom: 10px;">משקל - ממוצע</h4>
+                    <canvas id="weightChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+                
+                <!-- Fat Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 id="fatChartTitle" style="text-align: center; margin-bottom: 10px;">שומן - ממוצע</h4>
+                    <canvas id="fatChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+                
+                <!-- Muscle Chart -->
+                <div style="flex: 1; min-width: 400px; max-width: 500px;">
+                    <h4 id="muscleChartTitle" style="text-align: center; margin-bottom: 10px;">שריר - ממוצע</h4>
+                    <canvas id="muscleChart" width="450" height="320" style="max-width: 100%; height: auto;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('datePicker').value = todayStr;
+            
+            // Display today's date in DD/MM/YYYY format
+            const parts = todayStr.split('-');
+            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            document.getElementById('dateDisplay').textContent = formattedDate;
+            
+            loadComparisonData();
+        });
+
+        // Format date picker display to show DD/MM/YYYY
+        document.getElementById('datePicker').addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (selectedDate) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for display
+                const parts = selectedDate.split('-');
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                
+                // Update the display div
+                document.getElementById('dateDisplay').textContent = formattedDate;
+            }
+        });
+
+        // Make the display div clickable to open date picker
+        document.getElementById('dateDisplay').addEventListener('click', function() {
+            document.getElementById('datePicker').showPicker();
+        });
+        
+        async function loadComparisonData() {
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    displayComparison(data.data);
+                } else {
+                    showError('אין נתונים זמינים');
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת הנתונים:', error);
+                showError('שגיאה בטעינת הנתונים');
+            }
+        }
+        
+        function displayComparison(data) {
+            // Get selected window size
+            const windowSize = parseInt(document.getElementById('windowSelect').value);
+            
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+            
+            // Sort data by date (newest first)
+            const sortedData = data.sort((a, b) => {
+                const parseDate = (dateStr) => {
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split('/');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    } else if (dateStr.includes('T')) {
+                        return new Date(dateStr.split('T')[0] + 'T00:00:00');
+                    } else {
+                        return new Date(dateStr + 'T00:00:00');
+                    }
+                };
+                
+                const dateA = parseDate(a[0]);
+                const dateB = parseDate(b[0]);
+                return dateB - dateA;
+            });
+            
+            // Get selected date from date picker
+            const selectedDateInput = document.getElementById('datePicker').value;
+            
+            if (!selectedDateInput) {
+                showError('אנא בחר תאריך');
+                return;
+            }
+            
+            // Convert from YYYY-MM-DD to DD/MM/YYYY
+            const date = new Date(selectedDateInput);
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            const selectedDateStr = `${dd}/${mm}/${yyyy}`;
+            
+            // Find selected date's data
+            const selectedDateData = sortedData.find(row => {
+                let dateStr = row[0];
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                if (dateStr.includes('-') && dateStr.length === 10) {
+                    const parts = dateStr.split('-');
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr === selectedDateStr;
+            });
+            
+            if (!selectedDateData) {
+                showError(`לא נמצאו נתונים עבור התאריך ${selectedDateStr}`);
+                return;
+            }
+            
+            // Find the index of selected date in sorted data
+            const selectedDateIndex = sortedData.findIndex(row => {
+                let dateStr = row[0];
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                if (dateStr.includes('-') && dateStr.length === 10) {
+                    const parts = dateStr.split('-');
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr === selectedDateStr;
+            });
+            
+            // Get windowSize days before selected date
+            const lastWindowDays = sortedData.filter((row, index) => {
+                return index > selectedDateIndex && index <= selectedDateIndex + windowSize;
+            });
+            
+            if (lastWindowDays.length === 0) {
+                showError(`לא נמצאו נתונים עבור ${windowSize} הימים שלפני התאריך הנבחר`);
+                return;
+            }
+            
+            // Get windowSize days including selected date
+            const currentWindowDays = sortedData.filter((row, index) => {
+                return index >= selectedDateIndex && index < selectedDateIndex + windowSize;
+            });
+            
+            // Get previous windowSize days for second comparison
+            const previousWindowDays = sortedData.filter((row, index) => {
+                return index > selectedDateIndex + windowSize && index <= selectedDateIndex + (windowSize * 2);
+            });
+            
+            // Calculate averages for last windowSize days (before selected date)
+            const averages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            lastWindowDays.forEach(row => {
+                averages.weight += parseFloat(row[1]) || 0;
+                averages.muscle += parseFloat(row[2]) || 0;
+                averages.fat += parseFloat(row[3]) || 0;
+                averages.fluids += parseFloat(row[4]) || 0;
+            });
+            
+            const count = lastWindowDays.length;
+            averages.weight = averages.weight / count;
+            averages.muscle = averages.muscle / count;
+            averages.fat = averages.fat / count;
+            averages.fluids = averages.fluids / count;
+            
+            // Calculate averages for current windowSize days (including selected date)
+            const currentAverages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            currentWindowDays.forEach(row => {
+                currentAverages.weight += parseFloat(row[1]) || 0;
+                currentAverages.muscle += parseFloat(row[2]) || 0;
+                currentAverages.fat += parseFloat(row[3]) || 0;
+                currentAverages.fluids += parseFloat(row[4]) || 0;
+            });
+            
+            const currentCount = currentWindowDays.length;
+            currentAverages.weight = currentAverages.weight / currentCount;
+            currentAverages.muscle = currentAverages.muscle / currentCount;
+            currentAverages.fat = currentAverages.fat / currentCount;
+            currentAverages.fluids = currentAverages.fluids / currentCount;
+            
+            // Calculate averages for previous windowSize days (for second comparison)
+            const previousAverages = {
+                weight: 0,
+                muscle: 0,
+                fat: 0,
+                fluids: 0
+            };
+            
+            if (previousWindowDays.length > 0) {
+                previousWindowDays.forEach(row => {
+                    previousAverages.weight += parseFloat(row[1]) || 0;
+                    previousAverages.muscle += parseFloat(row[2]) || 0;
+                    previousAverages.fat += parseFloat(row[3]) || 0;
+                    previousAverages.fluids += parseFloat(row[4]) || 0;
+                });
+                
+                const previousCount = previousWindowDays.length;
+                previousAverages.weight = previousAverages.weight / previousCount;
+                previousAverages.muscle = previousAverages.muscle / previousCount;
+                previousAverages.fat = previousAverages.fat / previousCount;
+                previousAverages.fluids = previousAverages.fluids / previousCount;
+            }
+            
+            // Display comparison table
+            const tbody = document.getElementById('comparisonTableBody');
+            tbody.innerHTML = '';
+            
+            // Selected date's row
+            const selectedDateRow = tbody.insertRow();
+            selectedDateRow.className = 'today-row';
+            selectedDateRow.insertCell().textContent = `התאריך הנבחר (${selectedDateStr})`;
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[1]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[2]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[3]).toFixed(2);
+            selectedDateRow.insertCell().textContent = parseFloat(selectedDateData[4]).toFixed(2);
+            
+            // Average row (windowSize days before selected date)
+            const averageRow = tbody.insertRow();
+            averageRow.className = 'average-row';
+            averageRow.insertCell().textContent = `ממוצע ${windowSize} ימים לפני התאריך הנבחר`;
+            averageRow.insertCell().textContent = averages.weight.toFixed(2);
+            averageRow.insertCell().textContent = averages.muscle.toFixed(2);
+            averageRow.insertCell().textContent = averages.fat.toFixed(2);
+            averageRow.insertCell().textContent = averages.fluids.toFixed(2);
+            
+            // First difference row (selected date vs windowSize days before) - same color as average
+            const differenceRow = tbody.insertRow();
+            differenceRow.className = 'average-row';
+            differenceRow.insertCell().textContent = `הפרש (התאריך הנבחר - ממוצע ${windowSize} ימים לפני)`;
+            
+            // Calculate and display differences
+            const weightDiff = parseFloat(selectedDateData[1]) - averages.weight;
+            const muscleDiff = parseFloat(selectedDateData[2]) - averages.muscle;
+            const fatDiff = parseFloat(selectedDateData[3]) - averages.fat;
+            const fluidsDiff = parseFloat(selectedDateData[4]) - averages.fluids;
+            
+            // Weight difference (negative is good - losing weight)
+            const weightCell = differenceRow.insertCell();
+            weightCell.textContent = (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(2);
+            weightCell.className = weightDiff < 0 ? 'positive' : weightDiff > 0 ? 'negative' : 'neutral';
+            
+            // Muscle difference (positive is good - gaining muscle)
+            const muscleCell = differenceRow.insertCell();
+            muscleCell.textContent = (muscleDiff >= 0 ? '+' : '') + muscleDiff.toFixed(2);
+            muscleCell.className = muscleDiff > 0 ? 'positive' : muscleDiff < 0 ? 'negative' : 'neutral';
+            
+            // Fat difference (negative is good - losing fat)
+            const fatCell = differenceRow.insertCell();
+            fatCell.textContent = (fatDiff >= 0 ? '+' : '') + fatDiff.toFixed(2);
+            fatCell.className = fatDiff < 0 ? 'positive' : fatDiff > 0 ? 'negative' : 'neutral';
+            
+            // Fluids difference (positive is good - gaining fluids)
+            const fluidsCell = differenceRow.insertCell();
+            fluidsCell.textContent = (fluidsDiff >= 0 ? '+' : '') + fluidsDiff.toFixed(2);
+            fluidsCell.className = fluidsDiff > 0 ? 'positive' : fluidsDiff < 0 ? 'negative' : 'neutral';
+            
+            // Current windowSize days average row (including selected date)
+            const currentAverageRow = tbody.insertRow();
+            currentAverageRow.className = 'second-group-row';
+            currentAverageRow.insertCell().textContent = `ממוצע ${windowSize} ימים כולל התאריך הנבחר`;
+            currentAverageRow.insertCell().textContent = currentAverages.weight.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.muscle.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.fat.toFixed(2);
+            currentAverageRow.insertCell().textContent = currentAverages.fluids.toFixed(2);
+            
+            // Second comparison row (windowSize days including selected date vs previous windowSize days) - same color as second group
+            if (previousWindowDays.length > 0) {
+                const secondComparisonRow = tbody.insertRow();
+                secondComparisonRow.className = 'second-group-row';
+                secondComparisonRow.insertCell().textContent = `הפרש (ממוצע ${windowSize} ימים לפני התאריך - ממוצע ${windowSize} ימים כולל התאריך)`;
+                
+                // Calculate differences between windowSize days including selected date and windowSize days before
+                const currentVsPreviousWeight = currentAverages.weight - averages.weight;
+                const currentVsPreviousMuscle = currentAverages.muscle - averages.muscle;
+                const currentVsPreviousFat = currentAverages.fat - averages.fat;
+                const currentVsPreviousFluids = currentAverages.fluids - averages.fluids;
+                
+                // Weight difference (negative is good - losing weight)
+                const currentVsPreviousWeightCell = secondComparisonRow.insertCell();
+                currentVsPreviousWeightCell.textContent = (currentVsPreviousWeight >= 0 ? '+' : '') + currentVsPreviousWeight.toFixed(2);
+                currentVsPreviousWeightCell.className = currentVsPreviousWeight < 0 ? 'positive' : currentVsPreviousWeight > 0 ? 'negative' : 'neutral';
+                
+                // Muscle difference (positive is good - gaining muscle)
+                const currentVsPreviousMuscleCell = secondComparisonRow.insertCell();
+                currentVsPreviousMuscleCell.textContent = (currentVsPreviousMuscle >= 0 ? '+' : '') + currentVsPreviousMuscle.toFixed(2);
+                currentVsPreviousMuscleCell.className = currentVsPreviousMuscle > 0 ? 'positive' : currentVsPreviousMuscle < 0 ? 'negative' : 'neutral';
+                
+                // Fat difference (negative is good - losing fat)
+                const currentVsPreviousFatCell = secondComparisonRow.insertCell();
+                currentVsPreviousFatCell.textContent = (currentVsPreviousFat >= 0 ? '+' : '') + currentVsPreviousFat.toFixed(2);
+                currentVsPreviousFatCell.className = currentVsPreviousFat < 0 ? 'positive' : currentVsPreviousFat > 0 ? 'negative' : 'neutral';
+                
+                // Fluids difference (positive is good - gaining fluids)
+                const currentVsPreviousFluidsCell = secondComparisonRow.insertCell();
+                currentVsPreviousFluidsCell.textContent = (currentVsPreviousFluids >= 0 ? '+' : '') + currentVsPreviousFluids.toFixed(2);
+                currentVsPreviousFluidsCell.className = currentVsPreviousFluids > 0 ? 'positive' : currentVsPreviousFluids < 0 ? 'negative' : 'neutral';
+            }
+            
+            // Show table
+            document.getElementById('comparisonTable').style.display = 'block';
+            
+            // Update chart titles
+            document.getElementById('weightChartTitle').textContent = `משקל - ממוצע ${windowSize} ימים`;
+            document.getElementById('fatChartTitle').textContent = `שומן - ממוצע ${windowSize} ימים`;
+            document.getElementById('muscleChartTitle').textContent = `שריר - ממוצע ${windowSize} ימים`;
+            
+            // Create progress charts
+            createProgressCharts(sortedData, selectedDateIndex, windowSize);
+        }
+        
+        function createProgressCharts(data, selectedDateIndex, windowSize) {
+            // Get the last 10 data points from selected date
+            const chartData = data.slice(selectedDateIndex, selectedDateIndex + 10);
+            
+            // Calculate windowSize-day averages for all metrics
+            const chartDataPoints = {
+                weight: [],
+                fat: [],
+                muscle: []
+            };
+            const labels = [];
+            
+            for (let i = 0; i <= chartData.length - windowSize; i++) {
+                // Get windowSize consecutive days (data is sorted newest first, so we need to reverse for chronological order)
+                const windowDays = chartData.slice(i, i + windowSize).reverse();
+                
+                // Calculate averages for all metrics
+                let totalWeight = 0, totalFat = 0, totalMuscle = 0;
+                let validDays = 0;
+                
+                windowDays.forEach(day => {
+                    const weight = parseFloat(day[1]) || 0;
+                    const fat = parseFloat(day[3]) || 0;
+                    const muscle = parseFloat(day[2]) || 0;
+                    
+                    if (weight > 0) {
+                        totalWeight += weight;
+                        totalFat += fat;
+                        totalMuscle += muscle;
+                        validDays++;
+                    }
+                });
+                
+                if (validDays > 0) {
+                    // Format date for label (use the last/most recent date of the windowSize days)
+                    let dateStr = windowDays[windowDays.length - 1][0]; // Last date (most recent)
+                    
+                    if (dateStr.includes('T')) {
+                        dateStr = dateStr.split('T')[0];
+                    }
+                    
+                    // Check if date is in DD/MM/YYYY format and convert to DD/MM
+                    if (dateStr.includes('/') && dateStr.length === 10) {
+                        const parts = dateStr.split('/');
+                        dateStr = `${parts[0]}/${parts[1]}`;
+                    } else if (dateStr.includes('-') && dateStr.length === 10) {
+                        const parts = dateStr.split('-');
+                        dateStr = `${parts[2]}/${parts[1]}`;
+                    }
+                    
+                    chartDataPoints.weight.push(totalWeight / validDays);
+                    chartDataPoints.fat.push(totalFat / validDays);
+                    chartDataPoints.muscle.push(totalMuscle / validDays);
+                    labels.push(dateStr);
+                }
+            }
+            
+            // Create all three charts
+            createSingleChart('weightChart', chartDataPoints.weight, labels, '#dc3545', 'משקל (ק״ג)');
+            createSingleChart('fatChart', chartDataPoints.fat, labels, '#ffc107', 'שומן (ק״ג)');
+            createSingleChart('muscleChart', chartDataPoints.muscle, labels, '#28a745', 'שריר (ק״ג)');
+            
+            // Show charts
+            document.getElementById('progressChart').style.display = 'block';
+        }
+        
+        function createSingleChart(canvasId, dataPoints, labels, color, metricName) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear previous chart
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (dataPoints.length === 0) {
+                return;
+            }
+            
+            // Chart dimensions
+            const margin = 50;
+            const chartWidth = canvas.width - 2 * margin;
+            const chartHeight = canvas.height - 2 * margin;
+            
+            // Find min/max values for scaling
+            const minValue = Math.min(...dataPoints);
+            const maxValue = Math.max(...dataPoints);
+            const range = maxValue - minValue;
+            const padding = range * 0.1 || 0.1;
+            const yMin = minValue - padding;
+            const yMax = maxValue + padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, canvas.height - margin);
+            ctx.lineTo(canvas.width - margin, canvas.height - margin);
+            ctx.stroke();
+            
+            // Draw grid lines and Y-axis labels
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'right';
+            
+            for (let i = 0; i <= 4; i++) {
+                const y = margin + (chartHeight * i / 4);
+                ctx.beginPath();
+                ctx.moveTo(margin, y);
+                ctx.lineTo(canvas.width - margin, y);
+                ctx.stroke();
+                
+                // Add Y-axis labels
+                const value = yMax - (yMax - yMin) * i / 4;
+                ctx.fillText(value.toFixed(1), margin - 5, y + 3);
+            }
+            
+            // Draw data line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            dataPoints.forEach((value, index) => {
+                const x = margin + (chartWidth * index / (dataPoints.length - 1 || 1));
+                const y = canvas.height - margin - (chartHeight * (value - yMin) / (yMax - yMin));
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            // Draw data points
+            ctx.fillStyle = color;
+            dataPoints.forEach((value, index) => {
+                const x = margin + (chartWidth * index / (dataPoints.length - 1 || 1));
+                const y = canvas.height - margin - (chartHeight * (value - yMin) / (yMax - yMin));
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Add value above the point
+                ctx.fillStyle = '#333';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(value.toFixed(1), x, y - 10);
+                ctx.fillStyle = color;
+            });
+            
+            // Draw X-axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            
+            labels.forEach((label, index) => {
+                const x = margin + (chartWidth * index / (labels.length - 1 || 1));
+                ctx.fillText(label, x, canvas.height - margin + 15);
+            });
+            
+            // Draw legend
+            const legendY = 25;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = color;
+            ctx.fillRect(margin, legendY - 10, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText(metricName, margin + 20, legendY);
+        }
+        
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
