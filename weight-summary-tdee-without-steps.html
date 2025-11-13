@@ -258,6 +258,12 @@
             <div id="topSummary" class="top-summary" style="display: none;">
                 <h3>📊 סיכום שינוי משקל, קלוריות, צעדים ו-TDEE לכל חלון</h3>
                 
+                <div style="margin-bottom: 15px; text-align: left;">
+                    <button onclick="exportToExcel()" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        📥 ייצא ל-Excel
+                    </button>
+                </div>
+                
                 <div class="summary-table-container" id="summaryTableContainer" style="display: none;">
                     <table class="summary-table">
                         <thead>
@@ -280,6 +286,7 @@
     <script>
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
         const windowSizes = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        let calculatedCardsData = []; // Store cards data for export
         
         // Parse DD/MM/YYYY date format
         function parseDate(dateStr) {
@@ -488,6 +495,8 @@
             const summaryTableContainer = document.getElementById('summaryTableContainer');
             const summaryTableBody = document.getElementById('summaryTableBody');
             
+            calculatedCardsData = []; // Reset stored data
+            
             if (weightData.length === 0) {
                 topSummary.style.display = 'none';
                 return;
@@ -544,6 +553,23 @@
                 
                 // ממוצע קלוריות + ממוצע TDEE ליום - קלוריות מצעדים
                 const avgCaloriesPlusTdeeMinusSteps = avgCaloriesPlusAvgTdee - Math.round(caloriesFromSteps);
+                
+                // Store data for export
+                calculatedCardsData.push({
+                    windowSize: windowSize,
+                    delta: delta,
+                    deltaText: deltaText,
+                    range: lastWindow.range,
+                    avgCalories: Math.round(nutrition.avgCalories),
+                    totalCalories: Math.round(nutrition.totalCalories),
+                    avgSteps: Math.round(nutrition.avgSteps),
+                    tdee: Math.round(tdee),
+                    avgTdeePerDay: Math.round(avgTdeePerDay),
+                    caloriesFromSteps: Math.round(caloriesFromSteps),
+                    avgCaloriesPlusAvgTdee: avgCaloriesPlusAvgTdee,
+                    avgCaloriesPlusTdeeMinusSteps: avgCaloriesPlusTdeeMinusSteps,
+                    caloriesRange: nutrition.caloriesRange
+                });
                 
                 // Add row to summary table
                 summaryTableRows += `
@@ -676,6 +702,141 @@
             console.log('דף סיכום משקל ותזונה - TDEE ללא צעדים נטען');
             loadData();
         });
+        
+        // Export table and cards to Excel
+        function exportToExcel() {
+            if (calculatedCardsData.length === 0) {
+                alert('אין נתונים לייצוא. אנא טען נתונים קודם.');
+                return;
+            }
+            
+            let csvContent = '';
+            
+            // Export cards data first
+            csvContent += 'כרטיסים - סיכום משקל, קלוריות, צעדים ו-TDEE\n';
+            const cardsHeaders = [
+                'חלון זמן (ימים)',
+                'שינוי משקל אחרון (ק"ג)',
+                'טווח תאריכים',
+                'ממוצע קלוריות',
+                'סה"כ קלוריות',
+                'ממוצע צעדים',
+                'TDEE (שינוי × 7700)',
+                'ממוצע TDEE ליום',
+                'קלוריות מצעדים',
+                'ממוצע קלוריות + ממוצע TDEE ליום',
+                'ממוצע קלוריות + ממוצע TDEE ליום - קלוריות מצעדים',
+                'טווח תאריכים קלוריות'
+            ];
+            csvContent += cardsHeaders.join(',') + '\n';
+            
+            calculatedCardsData.forEach(card => {
+                const rowData = [
+                    card.windowSize || '',
+                    card.delta !== undefined && card.delta !== null ? (card.delta >= 0 ? '+' : '') + card.delta.toFixed(2) : '',
+                    card.range || '',
+                    card.avgCalories || '',
+                    card.totalCalories || '',
+                    card.avgSteps || '',
+                    card.tdee !== undefined && card.tdee !== null ? (card.tdee >= 0 ? '+' : '') + card.tdee : '',
+                    card.avgTdeePerDay !== undefined && card.avgTdeePerDay !== null ? (card.avgTdeePerDay >= 0 ? '+' : '') + card.avgTdeePerDay : '',
+                    card.caloriesFromSteps || '',
+                    card.avgCaloriesPlusAvgTdee || '',
+                    card.avgCaloriesPlusTdeeMinusSteps || '',
+                    card.caloriesRange || ''
+                ];
+                
+                // Escape and wrap in quotes
+                const escapedRow = rowData.map(cell => {
+                    let cellText = String(cell || '');
+                    if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                        cellText = ' ' + cellText;
+                    }
+                    cellText = cellText.replace(/\/(\s*)-/g, '/ -');
+                    return '"' + cellText.replace(/"/g, '""') + '"';
+                });
+                
+                csvContent += escapedRow.join(',') + '\n';
+            });
+            
+            // Add separator
+            csvContent += '\n';
+            csvContent += 'טבלת סיכום - Net Tdee\n';
+            
+            // Export summary table
+            const tables = document.querySelectorAll('table');
+            if (tables.length > 0) {
+                const table = tables[0];
+                const tbody = table.querySelector('tbody');
+                
+                if (tbody) {
+                    const rows = tbody.querySelectorAll('tr');
+                    
+                    // Get headers from thead
+                    const thead = table.querySelector('thead');
+                    if (thead) {
+                        const headerRows = thead.querySelectorAll('tr');
+                        headerRows.forEach(headerRow => {
+                            const headerCells = headerRow.querySelectorAll('th');
+                            const headerData = [];
+                            headerCells.forEach(cell => {
+                                let cellText = cell.textContent.trim();
+                                if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                                    cellText = ' ' + cellText;
+                                }
+                                if (cellText.includes(',') || cellText.includes('"')) {
+                                    cellText = '"' + cellText.replace(/"/g, '""') + '"';
+                                }
+                                headerData.push(cellText || '');
+                            });
+                            csvContent += headerData.join(',') + '\n';
+                        });
+                    }
+                    
+                    // Get all data rows
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length === 0) return;
+                        
+                        const rowData = [];
+                        
+                        cells.forEach((cell) => {
+                            let cellText = cell.textContent.trim() || cell.innerText.trim();
+                            
+                            if (!cellText) {
+                                rowData.push('""');
+                                return;
+                            }
+                            
+                            if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                                cellText = ' ' + cellText;
+                            }
+                            
+                            cellText = cellText.replace(/\/(\s*)-/g, '/ -');
+                            cellText = '"' + cellText.replace(/"/g, '""') + '"';
+                            
+                            rowData.push(cellText);
+                        });
+                        
+                        csvContent += rowData.join(',') + '\n';
+                    });
+                }
+            }
+            
+            // Create BOM for UTF-8 (Excel compatibility with Hebrew)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            link.setAttribute('download', `סיכום_משקל_TDEE_${dateStr}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </body>
 </html>

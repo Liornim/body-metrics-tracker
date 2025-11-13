@@ -135,6 +135,11 @@
         <div class="header">
             <h1>🏥 מערכת מעקב בריאות וכושר</h1>
             <p>מערכת מקיפה למעקב אחר מדדי גוף, תזונה וכושר עם ניתוחים מתקדמים, טבלאות וסיכומים</p>
+            <button id="saveAllTablesBtn" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(45deg, #28a745, #20c997); color: white; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s ease;">
+                💾 שמור את כל הטבלאות מכל הדפים ל-Google Sheets
+            </button>
+            <div id="saveAllProgress" style="display: none; margin-top: 15px; color: white; font-size: 14px;"></div>
+            <div id="saveAllResults" style="display: none; margin-top: 15px; background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto;"></div>
         </div>
         
         <div class="status-bar">
@@ -195,14 +200,6 @@
                 <a href="https://liornim.github.io/body-metrics-tracker/nutrition.html" class="app-link" target="_blank">🌐 פתח</a>
             </div>
             
-            <!-- 3-Day Metrics Comparison -->
-            <div class="app-card">
-                <div class="app-icon">📊</div>
-                <div class="app-title">ניתוח מדדי גוף 3 ימים</div>
-                <div class="app-description">השוואת תאריך נבחר לממוצע 3 ימים עם גרפים וצבעי סטטוס</div>
-                <a href="https://liornim.github.io/body-metrics-tracker/3-day-metrics.html" class="app-link" target="_blank">🌐 פתח</a>
-            </div>
-            
             <!-- Metrics Comparison with Window Selector -->
             <div class="app-card">
                 <div class="app-icon">📊</div>
@@ -241,14 +238,6 @@
                 <div class="app-title">טבלת היסטוריית תחזוקה עד היום</div>
                 <div class="app-description">טבלה של 5 חישובי תחזוקה אחרונים לכל חלון זמן עם ממוצעים</div>
                 <a href="https://liornim.github.io/body-metrics-tracker/maintenance-history-table.html" class="app-link" target="_blank">🌐 פתח</a>
-            </div>
-            
-            <!-- Targets vs Actual Nutrition -->
-            <div class="app-card">
-                <div class="app-icon">📊</div>
-                <div class="app-title">יעדים מול בפועל - תזונה</div>
-                <div class="app-description">השוואת יעדי תזונה מול צריכה בפועל עם חישובי פערים</div>
-                <a href="https://liornim.github.io/body-metrics-tracker/targets-vs-actual-nutrition.html" class="app-link" target="_blank">🌐 פתח</a>
             </div>
             
             <!-- Targets vs Actual Nutrition with Window Selector -->
@@ -329,6 +318,14 @@
                 <div class="app-title">תצוגה מקדימה - סיכום פערים מחר</div>
                 <div class="app-description">הזן ערכים היפותטיים להיום וצפה איך הפערים ייראו מחר עם השוואה לפני ואחרי</div>
                 <a href="https://liornim.github.io/body-metrics-tracker/combined-macro-calorie-gaps-future-preview.html" class="app-link" target="_blank">🌐 פתח</a>
+            </div>
+            
+            <!-- Required Consumption Last Day -->
+            <div class="app-card">
+                <div class="app-icon">📋</div>
+                <div class="app-title">צריכה נדרשת ביום האחרון</div>
+                <div class="app-description">חישוב הצריכה הנדרשת ביום האחרון של כל חלון זמן לאיזון היעדים</div>
+                <a href="https://liornim.github.io/body-metrics-tracker/required-consumption-last-day.html" class="app-link" target="_blank">🌐 פתח</a>
             </div>
         </div>
     </div>
@@ -582,6 +579,120 @@
         
         // Load statistics when page loads
         document.addEventListener('DOMContentLoaded', loadStatistics);
+        
+        // Save all tables from all pages
+        document.getElementById('saveAllTablesBtn').addEventListener('click', async function() {
+            const button = this;
+            const progressDiv = document.getElementById('saveAllProgress');
+            const resultsDiv = document.getElementById('saveAllResults');
+            
+            // Disable button and show progress
+            button.disabled = true;
+            button.textContent = '⏳ שומר...';
+            progressDiv.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            progressDiv.textContent = 'אוסף קישורים מהדף...';
+            
+            try {
+                // Collect all links from app cards
+                const appLinks = document.querySelectorAll('.app-link');
+                const urls = [];
+                
+                appLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.includes('liornim.github.io/body-metrics-tracker/')) {
+                        // Only include HTML files, exclude the main page
+                        if (href.endsWith('.html') || href.includes('.html')) {
+                            urls.push(href);
+                        }
+                    }
+                });
+                
+                if (urls.length === 0) {
+                    throw new Error('לא נמצאו קישורים לשמירה');
+                }
+                
+                progressDiv.textContent = `מצא ${urls.length} דפים. מתחיל לשמור...`;
+                
+                // Send to Google Apps Script
+                const payload = {
+                    action: 'saveAllTables',
+                    urls: urls,
+                    baseSheetName: 'AllTables',
+                    includeTimestamp: true
+                };
+                
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    progressDiv.textContent = '✓ הושלם בהצלחה!';
+                    progressDiv.style.color = '#90EE90';
+                    
+                    // Show results
+                    let resultsHtml = '<h3 style="margin-bottom: 10px; color: #28a745;">✓ שמירה הושלמה בהצלחה!</h3>';
+                    resultsHtml += `<p><strong>סה"כ דפים:</strong> ${result.totalUrls}</p>`;
+                    resultsHtml += `<p><strong>תאריך:</strong> ${result.timestamp}</p>`;
+                    resultsHtml += '<hr style="margin: 10px 0;">';
+                    resultsHtml += '<h4>תוצאות:</h4><ul style="text-align: right; max-height: 300px; overflow-y: auto;">';
+                    
+                    let successCount = 0;
+                    let failCount = 0;
+                    
+                    result.results.forEach((item, index) => {
+                        if (item.success) {
+                            successCount++;
+                            resultsHtml += `<li style="color: #28a745; margin: 5px 0;">✓ ${item.pageName || 'דף ' + (index + 1)}: ${item.rows || 0} שורות, ${item.cols || 0} עמודות → ${item.sheetName}</li>`;
+                        } else {
+                            failCount++;
+                            resultsHtml += `<li style="color: #dc3545; margin: 5px 0;">✗ ${item.pageName || 'דף ' + (index + 1)}: ${item.error || 'שגיאה'}</li>`;
+                        }
+                    });
+                    
+                    resultsHtml += '</ul>';
+                    resultsHtml += `<p style="margin-top: 10px;"><strong>הצלחו:</strong> ${successCount} | <strong>נכשלו:</strong> ${failCount}</p>`;
+                    
+                    resultsDiv.innerHTML = resultsHtml;
+                    resultsDiv.style.display = 'block';
+                    
+                    button.textContent = '✓ נשמר בהצלחה!';
+                    button.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+                    
+                    setTimeout(() => {
+                        button.textContent = '💾 שמור את כל הטבלאות מכל הדפים ל-Google Sheets';
+                        button.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+                        button.disabled = false;
+                    }, 5000);
+                    
+                } else {
+                    throw new Error(result.error || 'שגיאה בשמירה');
+                }
+                
+            } catch (error) {
+                console.error('Error saving all tables:', error);
+                progressDiv.textContent = '✗ שגיאה: ' + error.message;
+                progressDiv.style.color = '#ff6b6b';
+                
+                resultsDiv.innerHTML = `<h3 style="color: #dc3545;">✗ שגיאה בשמירה</h3><p>${error.message}</p>`;
+                resultsDiv.style.display = 'block';
+                
+                button.textContent = '✗ שגיאה - נסה שוב';
+                button.style.background = 'linear-gradient(45deg, #dc3545, #c82333)';
+                
+                setTimeout(() => {
+                    button.textContent = '💾 שמור את כל הטבלאות מכל הדפים ל-Google Sheets';
+                    button.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+                    button.disabled = false;
+                }, 3000);
+            }
+        });
     </script>
 </body>
 </html>

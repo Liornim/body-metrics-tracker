@@ -307,6 +307,9 @@
         <div class="content">
             <div class="controls">
                 <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
+                <button onclick="exportToExcel()" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 10px;">
+                    📥 ייצא ל-Excel
+                </button>
             </div>
             
             <div id="loading" class="loading" style="display: none;">
@@ -342,6 +345,7 @@
     <script>
         let currentData = [];
         const windowSizes = [3, 5, 7, 9, 10, 11, 12, 13, 14];
+        let calculatedCardsData = []; // Store cards data for export
         
         // Parse DD/MM/YYYY date format
         function parseDate(dateStr) {
@@ -523,6 +527,7 @@
         // Display results
         function displayResults(data) {
             const container = document.getElementById('results');
+            calculatedCardsData = []; // Reset stored data
             
             if (data.length === 0) {
                 container.innerHTML = '<div class="no-data">אין נתונים מספיקים לניתוח</div>';
@@ -536,6 +541,27 @@
                 const lastFourWindows = results.slice(-4); // Get last 4 windows
                 
                 if (lastFourWindows.length === 0) return;
+                
+                // Store data for export
+                const summary = calculateWindowSummary(results);
+                calculatedCardsData.push({
+                    windowSize: windowSize,
+                    windows: lastFourWindows.map(result => ({
+                        windowNumber: result.index,
+                        range: result.range,
+                        daysCount: result.daysCount,
+                        average: result.average,
+                        delta: result.delta
+                    })),
+                    summary: summary ? {
+                        avgWeight: summary.avgWeight,
+                        avgDelta: summary.avgDelta,
+                        avgChangePerDay: summary.avgChangePerDay,
+                        totalChange: summary.totalChange,
+                        totalDays: summary.totalDays,
+                        windowCount: summary.windowCount
+                    } : null
+                });
                 
                 html += `
                     <div class="window-card">
@@ -659,6 +685,86 @@
             } finally {
                 loading.style.display = 'none';
             }
+        }
+        
+        // Export cards to Excel
+        function exportToExcel() {
+            if (calculatedCardsData.length === 0) {
+                alert('אין נתונים לייצוא. אנא טען נתונים קודם.');
+                return;
+            }
+            
+            let csvContent = '';
+            
+            // Export cards data
+            csvContent += 'כרטיסים - סיכום משקל לפי חלונות\n';
+            
+            calculatedCardsData.forEach(cardData => {
+                csvContent += `\nחלון ${cardData.windowSize} ימים\n`;
+                csvContent += 'חלון,טווח תאריכים,מספר ימים,ממוצע (ק"ג),שינוי מהקודם (ק"ג)\n';
+                
+                cardData.windows.forEach(window => {
+                    const rowData = [
+                        window.windowNumber || '',
+                        window.range || '',
+                        window.daysCount || '',
+                        window.average ? window.average.toFixed(2) : '',
+                        window.delta !== undefined && window.delta !== null ? (window.delta >= 0 ? '+' : '') + window.delta.toFixed(2) : ''
+                    ];
+                    
+                    const escapedRow = rowData.map(cell => {
+                        let cellText = String(cell || '');
+                        if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                            cellText = ' ' + cellText;
+                        }
+                        cellText = cellText.replace(/\/(\s*)-/g, '/ -');
+                        return '"' + cellText.replace(/"/g, '""') + '"';
+                    });
+                    
+                    csvContent += escapedRow.join(',') + '\n';
+                });
+                
+                // Add summary if available
+                if (cardData.summary) {
+                    csvContent += '\nסיכום\n';
+                    csvContent += 'ממוצע משקל,ממוצע שינוי לחלון,ממוצע שינוי ליום,שינוי כולל,סה"כ ימים,מספר חלונות\n';
+                    const summaryRow = [
+                        cardData.summary.avgWeight ? cardData.summary.avgWeight.toFixed(2) : '',
+                        cardData.summary.avgDelta !== undefined && cardData.summary.avgDelta !== null ? (cardData.summary.avgDelta >= 0 ? '+' : '') + cardData.summary.avgDelta.toFixed(2) : '',
+                        cardData.summary.avgChangePerDay !== undefined && cardData.summary.avgChangePerDay !== null ? (cardData.summary.avgChangePerDay >= 0 ? '+' : '') + cardData.summary.avgChangePerDay.toFixed(2) : '',
+                        cardData.summary.totalChange !== undefined && cardData.summary.totalChange !== null ? (cardData.summary.totalChange >= 0 ? '+' : '') + cardData.summary.totalChange.toFixed(2) : '',
+                        cardData.summary.totalDays || '',
+                        cardData.summary.windowCount || ''
+                    ];
+                    
+                    const escapedSummaryRow = summaryRow.map(cell => {
+                        let cellText = String(cell || '');
+                        if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                            cellText = ' ' + cellText;
+                        }
+                        cellText = cellText.replace(/\/(\s*)-/g, '/ -');
+                        return '"' + cellText.replace(/"/g, '""') + '"';
+                    });
+                    
+                    csvContent += escapedSummaryRow.join(',') + '\n';
+                }
+                
+                csvContent += '\n';
+            });
+            
+            // Create BOM for UTF-8 (Excel compatibility with Hebrew)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            link.setAttribute('download', `סיכום_משקל_חלונות_${dateStr}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         
         // Initialize page
