@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טבלת תחזוקה - 14 ימים (42 ימים אחרונים)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .explanation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .explanation h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .explanation p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .formula {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 2px solid #2e7d32;
+        }
+        
+        td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .value-positive {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .value-negative {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .value-neutral {
+            font-weight: bold;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .table-container {
+                overflow-x: scroll;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 טבלת תחזוקה - 14, 21 ו-28 ימים</h1>
+            <p>חישוב תחזוקה אמיתית לחלונות של 14, 21 ו-28 ימים - כל התאריכים הזמינים</p>
+        </div>
+        
+        <div class="content">
+            <div class="explanation">
+                <h4>📊 איך זה עובד?</h4>
+                <p><strong>הנוסחה:</strong> תחזוקה אמיתית = קלוריות ממוצעות + (ירידת משקל × 7700 ÷ ימים) - (צעדים ממוצעים ÷ 25)</p>
+                <div class="formula">
+                    Real Maintenance = Avg Calories + (Weight Loss × 7700 ÷ Days) - (Avg Steps ÷ 25)
+                </div>
+                <p><strong>7700 קלוריות = 1 ק"ג שומן</strong> - זה המרה מדויקת לירידת משקל</p>
+                <p><strong>25 צעדים = 1 קלוריה</strong> - זה המרה לצעדים שנשרפו</p>
+            </div>
+            
+            <button class="export-btn" onclick="exportToExcel()">📥 ייצא ל-Excel</button>
+            
+            <div id="loading" class="loading" style="display: none;">
+                🔄 טוען נתונים ומחשב תחזוקה...
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div id="tableContainer14" class="table-container" style="display: none;">
+                <h2 style="margin-bottom: 20px; color: #2e7d32; text-align: center;">📊 חלונות של 14 ימים</h2>
+                <table id="maintenanceTable14">
+                    <thead>
+                        <tr>
+                            <th>חלון</th>
+                            <th>תקופה</th>
+                            <th>משקל ממוצע (נוכחי)</th>
+                            <th>משקל ממוצע (קודם)</th>
+                            <th>שינוי משקל</th>
+                            <th>קלוריות ממוצעות</th>
+                            <th>צעדים ממוצעים</th>
+                            <th>קלוריות מירידת משקל</th>
+                            <th>קלוריות מצעדים</th>
+                            <th>תחזוקה אמיתית</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody14">
+                        <!-- Table rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="tableContainer21" class="table-container" style="display: none; margin-top: 40px;">
+                <h2 style="margin-bottom: 20px; color: #2e7d32; text-align: center;">📊 חלונות של 21 ימים</h2>
+                <table id="maintenanceTable21">
+                    <thead>
+                        <tr>
+                            <th>תאריך</th>
+                            <th>תקופה (21 ימים)</th>
+                            <th>משקל ממוצע (נוכחי)</th>
+                            <th>משקל ממוצע (קודם)</th>
+                            <th>שינוי משקל</th>
+                            <th>קלוריות ממוצעות</th>
+                            <th>צעדים ממוצעים</th>
+                            <th>קלוריות מירידת משקל</th>
+                            <th>קלוריות מצעדים</th>
+                            <th>תחזוקה אמיתית</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody21">
+                        <!-- Table rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="tableContainer28" class="table-container" style="display: none; margin-top: 40px;">
+                <h2 style="margin-bottom: 20px; color: #2e7d32; text-align: center;">📊 חלונות של 28 ימים</h2>
+                <table id="maintenanceTable28">
+                    <thead>
+                        <tr>
+                            <th>תאריך</th>
+                            <th>תקופה (28 ימים)</th>
+                            <th>משקל ממוצע (נוכחי)</th>
+                            <th>משקל ממוצע (קודם)</th>
+                            <th>שינוי משקל</th>
+                            <th>קלוריות ממוצעות</th>
+                            <th>צעדים ממוצעים</th>
+                            <th>קלוריות מירידת משקל</th>
+                            <th>קלוריות מצעדים</th>
+                            <th>תחזוקה אמיתית</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody28">
+                        <!-- Table rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        let calculatedData14 = [];
+        let calculatedData21 = [];
+        let calculatedData28 = [];
+        const WINDOW_DAYS_14 = 14;
+        const WINDOW_DAYS_21 = 21;
+        const WINDOW_DAYS_28 = 28;
+        
+        // Parse DD/MM/YYYY date format
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        
+        // Format date as DD/MM/YYYY
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Load data and calculate on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+        
+        async function loadData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('tableContainer14').style.display = 'none';
+                document.getElementById('tableContainer21').style.display = 'none';
+                document.getElementById('tableContainer28').style.display = 'none';
+                
+                // Load both body metrics and nutrition data
+                const [bodyMetricsResponse, nutritionResponse] = await Promise.all([
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=get`),
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`)
+                ]);
+                
+                const bodyMetricsData = await bodyMetricsResponse.json();
+                const nutritionData = await nutritionResponse.json();
+                
+                if (!bodyMetricsData.success || !nutritionData.success) {
+                    showError('שגיאה בטעינת נתונים');
+                    return;
+                }
+                
+                // Calculate maintenance for all available 14-day windows
+                calculatedData14 = calculateMaintenanceWindows(
+                    bodyMetricsData.data, 
+                    nutritionData.data,
+                    WINDOW_DAYS_14
+                );
+                
+                // Calculate maintenance for all available 21-day windows
+                calculatedData21 = calculateMaintenanceWindows(
+                    bodyMetricsData.data, 
+                    nutritionData.data,
+                    WINDOW_DAYS_21
+                );
+                
+                // Calculate maintenance for all available 28-day windows
+                calculatedData28 = calculateMaintenanceWindows(
+                    bodyMetricsData.data, 
+                    nutritionData.data,
+                    WINDOW_DAYS_28
+                );
+                
+                displayTable(calculatedData14, '14');
+                displayTable(calculatedData21, '21');
+                displayTable(calculatedData28, '28');
+                
+                document.getElementById('loading').style.display = 'none';
+                if (calculatedData14.length > 0) {
+                    document.getElementById('tableContainer14').style.display = 'block';
+                }
+                if (calculatedData21.length > 0) {
+                    document.getElementById('tableContainer21').style.display = 'block';
+                }
+                if (calculatedData28.length > 0) {
+                    document.getElementById('tableContainer28').style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('שגיאה בחיבור לשרת: ' + error.message);
+            }
+        }
+        
+        function calculateMaintenanceWindows(bodyData, nutritionData, windowDays) {
+            const results = [];
+            
+            // Check if first row is header
+            const hasHeader = bodyData[0] && bodyData[0][0] && 
+                             (typeof bodyData[0][0] === 'string') && 
+                             (bodyData[0][0].includes('תאריך') || bodyData[0][0].includes('Date') || 
+                              bodyData[0][0].includes('משקל') || bodyData[0][0].includes('Weight'));
+            
+            const startIndex = hasHeader ? 1 : 0;
+            
+            // Convert to array of objects and sort by date (newest first)
+            const bodyDataArray = bodyData.slice(startIndex).map(row => ({
+                date: row[0],
+                weight: parseFloat(row[1]) || 0
+            })).filter(item => item.weight > 0 && item.date);
+            
+            // Sort by date descending (newest first)
+            bodyDataArray.sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                if (!dateA || !dateB) return 0;
+                return dateB - dateA;
+            });
+            
+            // Calculate rolling window for each day
+            // For each day, we need at least 2 * windowDays of data before it
+            for (let i = 0; i <= bodyDataArray.length - (2 * windowDays); i++) {
+                // Current window: windowDays ending on day i (most recent day in window)
+                const currentWindowStart = i;
+                const currentWindowEnd = i + windowDays;
+                
+                // Previous window: windowDays before the current window
+                const previousWindowStart = currentWindowEnd;
+                const previousWindowEnd = previousWindowStart + windowDays;
+                
+                // Check if we have enough data
+                if (previousWindowEnd > bodyDataArray.length) {
+                    break; // Not enough data for this day
+                }
+                
+                // Get current window data (ending on day i)
+                const currentWindowBody = bodyDataArray.slice(currentWindowStart, currentWindowEnd);
+                const currentWindowNutrition = getNutritionForDates(nutritionData, 
+                    currentWindowBody.length > 0 ? currentWindowBody[currentWindowBody.length - 1].date : null,
+                    currentWindowBody.length > 0 ? currentWindowBody[0].date : null
+                );
+                
+                // Get previous window data
+                const previousWindowBody = bodyDataArray.slice(previousWindowStart, previousWindowEnd);
+                
+                if (currentWindowBody.length < windowDays || previousWindowBody.length < windowDays) {
+                    continue; // Skip if not enough data
+                }
+                
+                // Calculate averages for current window
+                const currentAvgWeight = currentWindowBody.reduce((sum, row) => sum + row.weight, 0) / windowDays;
+                const currentAvgCalories = currentWindowNutrition.avgCalories;
+                const currentAvgSteps = currentWindowNutrition.avgSteps;
+                
+                // Calculate averages for previous window
+                const previousAvgWeight = previousWindowBody.reduce((sum, row) => sum + row.weight, 0) / windowDays;
+                
+                // Calculate weight loss (positive = loss, negative = gain)
+                const weightLoss = previousAvgWeight - currentAvgWeight;
+                
+                // Calculate real maintenance
+                const weightLossCalories = (weightLoss * 7700) / windowDays; // Daily calorie deficit from weight loss
+                const stepsCalories = currentAvgSteps / 25; // Calories burned from steps
+                const realMaintenance = currentAvgCalories + weightLossCalories - stepsCalories;
+                
+                // Get the date for this calculation (the most recent day in the current window)
+                const calculationDate = currentWindowBody[0].date; // Most recent date
+                
+                results.push({
+                    windowNumber: i + 1,
+                    date: calculationDate,
+                    dateRange: `${currentWindowBody[currentWindowBody.length - 1].date} - ${currentWindowBody[0].date}`,
+                    currentAvgWeight: currentAvgWeight.toFixed(2),
+                    previousAvgWeight: previousAvgWeight.toFixed(2),
+                    weightLoss: weightLoss.toFixed(2),
+                    currentAvgCalories: currentAvgCalories.toFixed(0),
+                    currentAvgSteps: currentAvgSteps.toFixed(0),
+                    weightLossCalories: weightLossCalories.toFixed(0),
+                    stepsCalories: stepsCalories.toFixed(0),
+                    realMaintenance: realMaintenance.toFixed(0)
+                });
+            }
+            
+            return results;
+        }
+        
+        // Get nutrition data for a date range (calories dates are -1 day from weight dates)
+        function getNutritionForDates(nutritionData, startDate, endDate) {
+            if (!startDate || !endDate) {
+                return { avgCalories: 0, avgSteps: 0 };
+            }
+            
+            // Calculate calories dates (weight dates - 1 day)
+            const startDateObj = parseDate(startDate);
+            const endDateObj = parseDate(endDate);
+            
+            if (!startDateObj || !endDateObj) {
+                return { avgCalories: 0, avgSteps: 0 };
+            }
+            
+            startDateObj.setDate(startDateObj.getDate() - 1);
+            endDateObj.setDate(endDateObj.getDate() - 1);
+            
+            const caloriesStartDate = formatDate(startDateObj);
+            const caloriesEndDate = formatDate(endDateObj);
+            
+            // Check if first row is header
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            const dataStartIndex = hasHeader ? 1 : 0;
+            
+            // Data is ordered from newest to oldest, so we need to find matching dates
+            const calories = [];
+            const steps = [];
+            
+            for (let i = dataStartIndex; i < nutritionData.length; i++) {
+                const row = nutritionData[i];
+                if (!row || row.length === 0) continue;
+                
+                const rowDate = row[0];
+                if (!rowDate) continue;
+                
+                // Check if date is within range (inclusive)
+                const date = parseDate(rowDate);
+                const start = parseDate(caloriesStartDate);
+                const end = parseDate(caloriesEndDate);
+                
+                if (!date || !start || !end) continue;
+                
+                // Compare dates (accounting for order - data might be newest to oldest)
+                const isInRange = (date >= start && date <= end) || (date >= end && date <= start);
+                
+                if (isInRange) {
+                    const cal = parseFloat(row[1]) || 0; // Calories in column 1
+                    const step = parseFloat(row[6]) || 0; // Steps in column 6
+                    
+                    if (cal > 0) calories.push(cal);
+                    if (step > 0) steps.push(step);
+                }
+            }
+            
+            const avgCalories = calories.length > 0 ? calories.reduce((sum, cal) => sum + cal, 0) / calories.length : 0;
+            const avgSteps = steps.length > 0 ? steps.reduce((sum, step) => sum + step, 0) / steps.length : 0;
+            
+            return {
+                avgCalories: avgCalories,
+                avgSteps: avgSteps
+            };
+        }
+        
+        function displayTable(data, windowType) {
+            const tableBody = document.getElementById(`tableBody${windowType}`);
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            
+            data.forEach((result, index) => {
+                const row = document.createElement('tr');
+                
+                const weightLossClass = parseFloat(result.weightLoss) > 0 ? 'value-positive' : 'value-negative';
+                const weightLossCaloriesClass = parseFloat(result.weightLossCalories) > 0 ? 'value-positive' : 'value-negative';
+                
+                // Add label for today, yesterday, etc.
+                let dateLabel = result.date;
+                if (index === 0) {
+                    dateLabel = `היום - ${result.date}`;
+                } else if (index === 1) {
+                    dateLabel = `אתמול - ${result.date}`;
+                } else if (index === 2) {
+                    dateLabel = `שלשום - ${result.date}`;
+                } else {
+                    dateLabel = `${index + 1} ימים לפני - ${result.date}`;
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${dateLabel}</strong></td>
+                    <td>${result.dateRange}</td>
+                    <td>${result.currentAvgWeight} ק"ג</td>
+                    <td>${result.previousAvgWeight} ק"ג</td>
+                    <td class="${weightLossClass}">
+                        ${parseFloat(result.weightLoss) > 0 ? '+' : ''}${result.weightLoss} ק"ג
+                        ${parseFloat(result.weightLoss) > 0 ? '(ירידה)' : '(עלייה)'}
+                    </td>
+                    <td>${result.currentAvgCalories}</td>
+                    <td>${result.currentAvgSteps}</td>
+                    <td class="${weightLossCaloriesClass}">
+                        ${parseFloat(result.weightLossCalories) > 0 ? '+' : ''}${result.weightLossCalories}
+                        ${parseFloat(result.weightLossCalories) > 0 ? '(הוספה)' : '(הפחתה)'}
+                    </td>
+                    <td class="value-negative">-${result.stepsCalories}</td>
+                    <td class="value-neutral" style="font-size: 16px; color: #2e7d32;">
+                        ${result.realMaintenance} קלוריות
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function exportToExcel() {
+            if (calculatedData14.length === 0 && calculatedData21.length === 0 && calculatedData28.length === 0) {
+                alert('אין נתונים לייצוא');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = [
+                'תאריך',
+                'תקופה (14 ימים)',
+                'משקל ממוצע (נוכחי)',
+                'משקל ממוצע (קודם)',
+                'שינוי משקל',
+                'קלוריות ממוצעות',
+                'צעדים ממוצעים',
+                'קלוריות מירידת משקל',
+                'קלוריות מצעדים',
+                'תחזוקה אמיתית'
+            ];
+            
+            let csvContent = '';
+            
+            // Export 14-day windows
+            if (calculatedData14.length > 0) {
+                csvContent += 'חלונות של 14 ימים\n';
+                csvContent += headers.map(h => {
+                    const escaped = h.replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(',') + '\n';
+                
+                calculatedData14.forEach(result => {
+                    const weightLoss = parseFloat(result.weightLoss) > 0 ? `+${result.weightLoss} ק"ג (ירידה)` : `${result.weightLoss} ק"ג (עלייה)`;
+                    const weightLossCalories = parseFloat(result.weightLossCalories) > 0 ? `+${result.weightLossCalories} (הוספה)` : `${result.weightLossCalories} (הפחתה)`;
+                    const stepsCalories = `-${result.stepsCalories}`;
+                    const realMaintenance = `${result.realMaintenance} קלוריות`;
+                    
+                    const row = [
+                        result.date,
+                        result.dateRange,
+                        `${result.currentAvgWeight} ק"ג`,
+                        `${result.previousAvgWeight} ק"ג`,
+                        weightLoss,
+                        result.currentAvgCalories,
+                        result.currentAvgSteps,
+                        weightLossCalories,
+                        stepsCalories,
+                        realMaintenance
+                    ];
+                    
+                    csvContent += row.map(cell => {
+                        let cellText = String(cell);
+                        if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                            cellText = ' ' + cellText;
+                        }
+                        const escaped = cellText.replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    }).join(',') + '\n';
+                });
+                
+                csvContent += '\n';
+            }
+            
+            // Export 21-day windows
+            if (calculatedData21.length > 0) {
+                csvContent += 'חלונות של 21 ימים\n';
+                csvContent += headers.map(h => {
+                    const escaped = h.replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(',') + '\n';
+                
+                calculatedData21.forEach(result => {
+                    const weightLoss = parseFloat(result.weightLoss) > 0 ? `+${result.weightLoss} ק"ג (ירידה)` : `${result.weightLoss} ק"ג (עלייה)`;
+                    const weightLossCalories = parseFloat(result.weightLossCalories) > 0 ? `+${result.weightLossCalories} (הוספה)` : `${result.weightLossCalories} (הפחתה)`;
+                    const stepsCalories = `-${result.stepsCalories}`;
+                    const realMaintenance = `${result.realMaintenance} קלוריות`;
+                    
+                    const row = [
+                        result.date,
+                        result.dateRange,
+                        `${result.currentAvgWeight} ק"ג`,
+                        `${result.previousAvgWeight} ק"ג`,
+                        weightLoss,
+                        result.currentAvgCalories,
+                        result.currentAvgSteps,
+                        weightLossCalories,
+                        stepsCalories,
+                        realMaintenance
+                    ];
+                    
+                    csvContent += row.map(cell => {
+                        let cellText = String(cell);
+                        if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                            cellText = ' ' + cellText;
+                        }
+                        const escaped = cellText.replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    }).join(',') + '\n';
+                });
+                
+                csvContent += '\n';
+            }
+            
+            // Export 28-day windows
+            if (calculatedData28.length > 0) {
+                csvContent += 'חלונות של 28 ימים\n';
+                csvContent += headers.map(h => {
+                    const escaped = h.replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(',') + '\n';
+                
+                calculatedData28.forEach(result => {
+                    const weightLoss = parseFloat(result.weightLoss) > 0 ? `+${result.weightLoss} ק"ג (ירידה)` : `${result.weightLoss} ק"ג (עלייה)`;
+                    const weightLossCalories = parseFloat(result.weightLossCalories) > 0 ? `+${result.weightLossCalories} (הוספה)` : `${result.weightLossCalories} (הפחתה)`;
+                    const stepsCalories = `-${result.stepsCalories}`;
+                    const realMaintenance = `${result.realMaintenance} קלוריות`;
+                    
+                    const row = [
+                        result.date,
+                        result.dateRange,
+                        `${result.currentAvgWeight} ק"ג`,
+                        `${result.previousAvgWeight} ק"ג`,
+                        weightLoss,
+                        result.currentAvgCalories,
+                        result.currentAvgSteps,
+                        weightLossCalories,
+                        stepsCalories,
+                        realMaintenance
+                    ];
+                    
+                    csvContent += row.map(cell => {
+                        let cellText = String(cell);
+                        if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                            cellText = ' ' + cellText;
+                        }
+                        const escaped = cellText.replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    }).join(',') + '\n';
+                });
+            }
+            
+            // Create and download file
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `תחזוקה_14_21_ו_28_ימים_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+    </script>
+</body>
+</html>
