@@ -437,7 +437,7 @@
         let weightData = [];
         let windowTdeeMap = {};
         
-        const WINDOWS = [3, 5, 7, 9, 10, 11, 12, 13, 14];
+        const WINDOWS = [3, 5, 7, 9, 10, 11, 12, 13, 14, 21, 28];
         
         // Load data on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -606,24 +606,35 @@
             const select = document.getElementById('windowSelect');
             select.innerHTML = '<option value="">בחר חלון...</option>';
             
-            const sortedWindows = Object.keys(windowTdeeMap).map(Number).sort((a, b) => a - b);
+            // Show all windows from WINDOWS array, not just those with calculated TDEE
+            const sortedWindows = [...WINDOWS].sort((a, b) => a - b);
             
             sortedWindows.forEach(windowSize => {
                 const tdee = windowTdeeMap[windowSize];
                 const option = document.createElement('option');
                 option.value = windowSize;
-                option.textContent = `${windowSize} ימים - TDEE: ${tdee}`;
+                if (tdee !== undefined && tdee !== null) {
+                    option.textContent = `${windowSize} ימים - TDEE: ${tdee}`;
+                } else {
+                    option.textContent = `${windowSize} ימים - אין נתונים מספיקים`;
+                }
                 select.appendChild(option);
             });
             
-            // Set default to 14 days if available
-            if (windowTdeeMap[14] !== undefined) {
+            // Set default to 28 days if available, otherwise 14, otherwise first available
+            if (windowTdeeMap[28] !== undefined) {
+                select.value = '28';
+                fillDefaultsFromWindow();
+            } else if (windowTdeeMap[14] !== undefined) {
                 select.value = '14';
                 fillDefaultsFromWindow();
             } else if (sortedWindows.length > 0) {
-                // If 14 is not available, use the first available window
-                select.value = sortedWindows[0].toString();
-                fillDefaultsFromWindow();
+                // If 28 and 14 are not available, use the first available window with TDEE
+                const firstAvailableWindow = sortedWindows.find(w => windowTdeeMap[w] !== undefined);
+                if (firstAvailableWindow) {
+                    select.value = firstAvailableWindow.toString();
+                    fillDefaultsFromWindow();
+                }
             }
         }
         

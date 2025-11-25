@@ -500,7 +500,9 @@
             });
             
             // Set default to 14 days if available
-            if (windowTdeeMap[14] !== undefined) {
+            if (windowTdeeMap[28] !== undefined) {
+                select.value = '28';
+            } else if (windowTdeeMap[14] !== undefined) {
                 select.value = '14';
                 fillDefaultsFromWindow();
             } else if (sortedWindows.length > 0) {
