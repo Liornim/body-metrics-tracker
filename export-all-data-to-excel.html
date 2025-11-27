@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ייצוא כל הנתונים ל-Excel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .export-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .export-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .export-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .progress {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-item {
+            padding: 8px 0;
+            color: #1976d2;
+        }
+        
+        .progress-item.completed {
+            color: #4CAF50;
+        }
+        
+        .progress-item.error {
+            color: #f44336;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            margin-right: 20px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📥 ייצוא כל הנתונים ל-Excel</h1>
+            <p>ייצוא מקיף של כל הנתונים, טבלאות, כרטיסים ומספרים מכל הדפים</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h3>📊 מה נכלל בייצוא?</h3>
+                <ul>
+                    <li>נתוני משקל ותזונה גולמיים</li>
+                    <li>חישובי TDEE לכל חלונות הזמן</li>
+                    <li>חישובי תחזוקה אמיתית</li>
+                    <li>סיכומי משקל לפי חלונות</li>
+                    <li>ניתוחי גירעונות תזונתיים</li>
+                    <li>השוואות מקרונוטריינטים</li>
+                    <li>כל הטבלאות והכרטיסים מכל הדפים</li>
+                </ul>
+            </div>
+            
+            <div class="export-section">
+                <h2>🚀 ייצא את כל הנתונים</h2>
+                <button class="export-btn" onclick="exportAllData()" id="exportBtn">
+                    📥 ייצא הכל ל-Excel
+                </button>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                🔄 טוען ומחשב נתונים...
+            </div>
+            
+            <div id="progress" class="progress">
+                <h3>התקדמות:</h3>
+                <div id="progressItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        // Parse DD/MM/YYYY date format
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        
+        // Format date as DD/MM/YYYY
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Subtract one day from a date
+        function subtractOneDay(dateStr) {
+            const date = parseDate(dateStr);
+            if (!date) return null;
+            date.setDate(date.getDate() - 1);
+            return formatDate(date);
+        }
+        
+        // Sort data by date ascending
+        function sortDataAsc(data) {
+            return [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                if (!dateA || !dateB) return 0;
+                return dateA - dateB;
+            });
+        }
+        
+        // Create non-overlapping chunks
+        function createChunks(data, windowSize) {
+            const chunks = [];
+            for (let i = 0; i < data.length; i += windowSize) {
+                chunks.push(data.slice(i, i + windowSize));
+            }
+            return chunks;
+        }
+        
+        // Calculate mean
+        function calculateMean(values) {
+            if (values.length === 0) return 0;
+            const validValues = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+            if (validValues.length === 0) return 0;
+            return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+        }
+        
+        // Process window analysis for weight data
+        function processWindowAnalysis(data, windowSize) {
+            const sortedData = sortDataAsc(data);
+            const chunks = createChunks(sortedData, windowSize);
+            
+            const results = [];
+            
+            chunks.forEach((chunk, index) => {
+                if (chunk.length === 0) return;
+                if (chunk.length !== windowSize) return;
+                
+                const weights = chunk.map(item => item.weight);
+                const average = calculateMean(weights);
+                const dateRange = `${chunk[0].date} - ${chunk[chunk.length - 1].date}`;
+                
+                const result = {
+                    window: windowSize,
+                    range: dateRange,
+                    average: average,
+                    delta: null,
+                    index: index + 1,
+                    daysCount: chunk.length,
+                    startDate: chunk[0].date,
+                    endDate: chunk[chunk.length - 1].date
+                };
+                
+                if (index > 0) {
+                    for (let prevIndex = index - 1; prevIndex >= 0; prevIndex--) {
+                        if (chunks[prevIndex].length === windowSize) {
+                            const prevWeights = chunks[prevIndex].map(item => item.weight);
+                            const prevAverage = calculateMean(prevWeights);
+                            result.delta = average - prevAverage;
+                            break;
+                        }
+                    }
+                }
+                
+                results.push(result);
+            });
+            
+            return results;
+        }
+        
+        // Get nutrition data for a date range
+        function getNutritionForWindow(nutritionData, startDate, endDate) {
+            const caloriesStartDate = subtractOneDay(startDate);
+            const caloriesEndDate = subtractOneDay(endDate);
+            
+            if (!caloriesStartDate || !caloriesEndDate) {
+                return { avgCalories: 0, totalCalories: 0, avgSteps: 0, caloriesRange: '--' };
+            }
+            
+            const hasHeader = nutritionData[0] && nutritionData[0][0] && 
+                             (typeof nutritionData[0][0] === 'string') && 
+                             (nutritionData[0][0].includes('תאריך') || nutritionData[0][0].includes('Date'));
+            
+            const dataStartIndex = hasHeader ? 1 : 0;
+            const calories = [];
+            const steps = [];
+            
+            for (let i = dataStartIndex; i < nutritionData.length; i++) {
+                const row = nutritionData[i];
+                if (!row || row.length === 0) continue;
+                
+                const rowDate = row[0];
+                if (!rowDate) continue;
+                
+                const date = parseDate(rowDate);
+                const start = parseDate(caloriesStartDate);
+                const end = parseDate(caloriesEndDate);
+                
+                if (!date || !start || !end) continue;
+                
+                const isInRange = (date >= start && date <= end) || (date >= end && date <= start);
+                
+                if (isInRange) {
+                    const cal = parseFloat(row[1]) || 0;
+                    const step = parseFloat(row[6]) || 0;
+                    
+                    if (cal > 0) calories.push(cal);
+                    if (step > 0) steps.push(step);
+                }
+            }
+            
+            const avgCalories = calculateMean(calories);
+            const totalCalories = calories.reduce((sum, cal) => sum + cal, 0);
+            const avgSteps = calculateMean(steps);
+            
+            return {
+                avgCalories: avgCalories,
+                totalCalories: totalCalories,
+                avgSteps: avgSteps,
+                caloriesRange: `${caloriesStartDate} - ${caloriesEndDate}`
+            };
+        }
+        
+        // Calculate TDEE
+        function calculateTDEE(delta) {
+            if (delta === null || delta === undefined) return 0;
+            const deltaRounded = Math.round(Math.abs(delta) * 100) / 100;
+            return delta >= 0 ? -(deltaRounded * 7700) : (deltaRounded * 7700);
+        }
+        
+        // Calculate Net TDEE
+        function calculateNetTDEE(windowSize, weightData, nutritionData) {
+            const results = processWindowAnalysis(weightData, windowSize);
+            const lastThreeFullWindows = results.filter(r => r.daysCount === windowSize);
+            
+            if (lastThreeFullWindows.length === 0) return null;
+            
+            const lastWindow = lastThreeFullWindows[lastThreeFullWindows.length - 1];
+            const delta = lastWindow.delta;
+            
+            if (delta === null || delta === undefined) return null;
+            
+            const nutrition = getNutritionForWindow(nutritionData, lastWindow.startDate, lastWindow.endDate);
+            const tdee = calculateTDEE(delta);
+            const avgTdeePerDay = windowSize > 0 ? tdee / windowSize : 0;
+            const caloriesFromSteps = nutrition.avgSteps / 25;
+            const netTdee = Math.round(nutrition.avgCalories) + Math.round(avgTdeePerDay) - Math.round(caloriesFromSteps);
+            
+            return netTdee;
+        }
+        
+        // Escape CSV cell
+        function escapeCSVCell(cell) {
+            let cellText = String(cell || '');
+            if (cellText.startsWith('=') || cellText.startsWith('+') || cellText.startsWith('-')) {
+                cellText = ' ' + cellText;
+            }
+            return '"' + cellText.replace(/"/g, '""') + '"';
+        }
+        
+        // Add progress item
+        function addProgressItem(text, status = '') {
+            const progressItems = document.getElementById('progressItems');
+            const item = document.createElement('div');
+            item.className = `progress-item ${status}`;
+            item.textContent = text;
+            progressItems.appendChild(item);
+        }
+        
+        // Main export function
+        async function exportAllData() {
+            const btn = document.getElementById('exportBtn');
+            const loading = document.getElementById('loading');
+            const progress = document.getElementById('progress');
+            const progressItems = document.getElementById('progressItems');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            progress.style.display = 'block';
+            progressItems.innerHTML = '';
+            
+            try {
+                addProgressItem('טוען נתוני משקל ותזונה...', '');
+                
+                // Load data
+                const [weightResponse, nutritionResponse] = await Promise.all([
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=get`),
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=getNutrition`)
+                ]);
+                
+                const weightData = await weightResponse.json();
+                const nutritionData = await nutritionResponse.json();
+                
+                if (!weightData.success || !nutritionData.success) {
+                    throw new Error('שגיאה בטעינת נתונים');
+                }
+                
+                addProgressItem('✓ נתונים נטענו', 'completed');
+                addProgressItem('מחשב נתונים...', '');
+                
+                // Process data
+                const hasHeader = weightData.data[0] && weightData.data[0][0] && 
+                                 (typeof weightData.data[0][0] === 'string') && 
+                                 (weightData.data[0][0].includes('תאריך') || weightData.data[0][0].includes('Date') || 
+                                  weightData.data[0][0].includes('משקל') || weightData.data[0][0].includes('Weight'));
+                
+                const startIndex = hasHeader ? 1 : 0;
+                const rawWeightData = weightData.data.slice(startIndex).reverse();
+                
+                const weightDataArray = rawWeightData.map(row => ({
+                    date: row[0],
+                    weight: parseFloat(row[1]) || 0
+                })).filter(item => item.weight > 0 && item.date);
+                
+                const windowSizes = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 28];
+                
+                // Build CSV content
+                let csvContent = '';
+                
+                // Section 1: Raw Data
+                addProgressItem('מייצא נתונים גולמיים...', '');
+                csvContent += '=== נתונים גולמיים ===\n';
+                csvContent += 'תאריך,משקל (ק"ג)\n';
+                weightDataArray.forEach(item => {
+                    csvContent += `${escapeCSVCell(item.date)},${escapeCSVCell(item.weight.toFixed(2))}\n`;
+                });
+                csvContent += '\n';
+                
+                // Section 2: Nutrition Data
+                addProgressItem('מייצא נתוני תזונה...', '');
+                csvContent += '=== נתוני תזונה ===\n';
+                const nutritionHasHeader = nutritionData.data[0] && nutritionData.data[0][0] && 
+                                         (typeof nutritionData.data[0][0] === 'string') && 
+                                         (nutritionData.data[0][0].includes('תאריך') || nutritionData.data[0][0].includes('Date'));
+                const nutritionStartIndex = nutritionHasHeader ? 1 : 0;
+                const nutritionRows = nutritionData.data.slice(nutritionStartIndex, nutritionStartIndex + 50); // Last 50 days
+                if (nutritionRows.length > 0) {
+                    csvContent += 'תאריך,קלוריות,שומן,פחמימות,חלבון,סיבים,צעדים\n';
+                    nutritionRows.forEach(row => {
+                        const rowData = [
+                            row[0] || '',
+                            row[1] || '',
+                            row[2] || '',
+                            row[3] || '',
+                            row[4] || '',
+                            row[5] || '',
+                            row[6] || ''
+                        ];
+                        csvContent += rowData.map(escapeCSVCell).join(',') + '\n';
+                    });
+                }
+                csvContent += '\n';
+                
+                // Section 3: TDEE by Windows
+                addProgressItem('מחשב TDEE לכל חלונות...', '');
+                csvContent += '=== TDEE לפי חלונות זמן ===\n';
+                csvContent += 'חלון (ימים),Net TDEE\n';
+                windowSizes.forEach(windowSize => {
+                    const netTdee = calculateNetTDEE(windowSize, weightDataArray, nutritionData.data);
+                    if (netTdee !== null) {
+                        csvContent += `${escapeCSVCell(windowSize)},${escapeCSVCell(netTdee)}\n`;
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 4: Weight Summary by Windows
+                addProgressItem('מחשב סיכומי משקל...', '');
+                csvContent += '=== סיכום משקל לפי חלונות ===\n';
+                windowSizes.forEach(windowSize => {
+                    const results = processWindowAnalysis(weightDataArray, windowSize);
+                    if (results.length > 0) {
+                        csvContent += `\nחלון ${windowSize} ימים\n`;
+                        csvContent += 'מספר חלון,טווח תאריכים,ממוצע משקל (ק"ג),שינוי מהקודם (ק"ג),מספר ימים\n';
+                        results.slice(-5).forEach(result => {
+                            csvContent += `${escapeCSVCell(result.index)},${escapeCSVCell(result.range)},${escapeCSVCell(result.average.toFixed(2))},${escapeCSVCell(result.delta !== null ? (result.delta >= 0 ? '+' : '') + result.delta.toFixed(2) : '')},${escapeCSVCell(result.daysCount)}\n`;
+                        });
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 5: Maintenance Calculations
+                addProgressItem('מחשב תחזוקה אמיתית...', '');
+                csvContent += '=== חישובי תחזוקה אמיתית ===\n';
+                const maintenanceWindows = [3, 5, 7, 9, 14, 21, 28];
+                csvContent += 'חלון (ימים),תקופה,משקל ממוצע נוכחי,משקל ממוצע קודם,שינוי משקל,קלוריות ממוצעות,צעדים ממוצעים,קלוריות מירידת משקל,קלוריות מצעדים,תחזוקה אמיתית\n';
+                
+                maintenanceWindows.forEach(windowSize => {
+                    const results = processWindowAnalysis(weightDataArray, windowSize);
+                    if (results.length >= 2) {
+                        const lastWindow = results[results.length - 1];
+                        const prevWindow = results[results.length - 2];
+                        
+                        if (lastWindow.delta !== null) {
+                            const nutrition = getNutritionForWindow(nutritionData.data, lastWindow.startDate, lastWindow.endDate);
+                            const weightLoss = prevWindow.average - lastWindow.average;
+                            const weightLossCalories = (weightLoss * 7700) / windowSize;
+                            const stepsCalories = nutrition.avgSteps / 25;
+                            const realMaintenance = nutrition.avgCalories + weightLossCalories - stepsCalories;
+                            
+                            csvContent += `${escapeCSVCell(windowSize)},${escapeCSVCell(lastWindow.range)},${escapeCSVCell(lastWindow.average.toFixed(2))},${escapeCSVCell(prevWindow.average.toFixed(2))},${escapeCSVCell(weightLoss.toFixed(2))},${escapeCSVCell(nutrition.avgCalories.toFixed(0))},${escapeCSVCell(nutrition.avgSteps.toFixed(0))},${escapeCSVCell(weightLossCalories.toFixed(0))},${escapeCSVCell(stepsCalories.toFixed(0))},${escapeCSVCell(realMaintenance.toFixed(0))}\n`;
+                        }
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 6: Weight Summary Cards (like weight-summary-by-windows.html)
+                addProgressItem('מחשב כרטיסי סיכום משקל...', '');
+                csvContent += '=== כרטיסי סיכום משקל לפי חלונות ===\n';
+                const cardWindows = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 28];
+                csvContent += 'חלון,מספר חלון,תקופה,ממוצע משקל,שינוי מהקודם,ממוצע קלוריות,ממוצע צעדים,TDEE,Net TDEE\n';
+                
+                cardWindows.forEach(windowSize => {
+                    const results = processWindowAnalysis(weightDataArray, windowSize);
+                    const fullWindows = results.filter(r => r.daysCount === windowSize);
+                    
+                    if (fullWindows.length >= 2) {
+                        const lastWindow = fullWindows[fullWindows.length - 1];
+                        const prevWindow = fullWindows[fullWindows.length - 2];
+                        const nutrition = getNutritionForWindow(nutritionData.data, lastWindow.startDate, lastWindow.endDate);
+                        const tdee = calculateTDEE(lastWindow.delta);
+                        const avgTdeePerDay = windowSize > 0 ? tdee / windowSize : 0;
+                        const caloriesFromSteps = nutrition.avgSteps / 25;
+                        const netTdee = Math.round(nutrition.avgCalories) + Math.round(avgTdeePerDay) - Math.round(caloriesFromSteps);
+                        
+                        csvContent += `${escapeCSVCell(windowSize)},${escapeCSVCell(lastWindow.index)},${escapeCSVCell(lastWindow.range)},${escapeCSVCell(lastWindow.average.toFixed(2))},${escapeCSVCell(lastWindow.delta !== null ? (lastWindow.delta >= 0 ? '+' : '') + lastWindow.delta.toFixed(2) : '')},${escapeCSVCell(nutrition.avgCalories.toFixed(0))},${escapeCSVCell(nutrition.avgSteps.toFixed(0))},${escapeCSVCell(Math.round(avgTdeePerDay))},${escapeCSVCell(netTdee)}\n`;
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 7: Real Maintenance Calculations (like real-maintenance-calculator.html)
+                addProgressItem('מחשב תחזוקה אמיתית מפורטת...', '');
+                csvContent += '=== חישובי תחזוקה אמיתית מפורטים ===\n';
+                csvContent += 'חלון,תקופה,משקל ממוצע נוכחי,משקל ממוצע קודם,שינוי משקל,קלוריות ממוצעות,צעדים ממוצעים,קלוריות מירידת משקל,קלוריות מצעדים,תחזוקה אמיתית\n';
+                
+                maintenanceWindows.forEach(windowSize => {
+                    const results = processWindowAnalysis(weightDataArray, windowSize);
+                    const fullWindows = results.filter(r => r.daysCount === windowSize);
+                    
+                    if (fullWindows.length >= 2) {
+                        const lastWindow = fullWindows[fullWindows.length - 1];
+                        const prevWindow = fullWindows[fullWindows.length - 2];
+                        
+                        if (lastWindow.delta !== null) {
+                            const nutrition = getNutritionForWindow(nutritionData.data, lastWindow.startDate, lastWindow.endDate);
+                            const weightLoss = prevWindow.average - lastWindow.average;
+                            const weightLossCalories = (weightLoss * 7700) / windowSize;
+                            const stepsCalories = nutrition.avgSteps / 25;
+                            const realMaintenance = nutrition.avgCalories + weightLossCalories - stepsCalories;
+                            
+                            csvContent += `${escapeCSVCell(windowSize)},${escapeCSVCell(lastWindow.range)},${escapeCSVCell(lastWindow.average.toFixed(2))},${escapeCSVCell(prevWindow.average.toFixed(2))},${escapeCSVCell(weightLoss.toFixed(2))},${escapeCSVCell(nutrition.avgCalories.toFixed(0))},${escapeCSVCell(nutrition.avgSteps.toFixed(0))},${escapeCSVCell(weightLossCalories.toFixed(0))},${escapeCSVCell(stepsCalories.toFixed(0))},${escapeCSVCell(realMaintenance.toFixed(0))}\n`;
+                        }
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 8: All Windows Analysis (last 5 windows for each size)
+                addProgressItem('מחשב ניתוח כל החלונות...', '');
+                csvContent += '=== ניתוח כל החלונות (5 האחרונים לכל גודל) ===\n';
+                windowSizes.forEach(windowSize => {
+                    const results = processWindowAnalysis(weightDataArray, windowSize);
+                    const fullWindows = results.filter(r => r.daysCount === windowSize);
+                    
+                    if (fullWindows.length > 0) {
+                        csvContent += `\nחלון ${windowSize} ימים - 5 האחרונים\n`;
+                        csvContent += 'מספר חלון,תקופה,ממוצע משקל,שינוי מהקודם,ממוצע קלוריות,ממוצע צעדים\n';
+                        fullWindows.slice(-5).forEach(result => {
+                            const nutrition = getNutritionForWindow(nutritionData.data, result.startDate, result.endDate);
+                            csvContent += `${escapeCSVCell(result.index)},${escapeCSVCell(result.range)},${escapeCSVCell(result.average.toFixed(2))},${escapeCSVCell(result.delta !== null ? (result.delta >= 0 ? '+' : '') + result.delta.toFixed(2) : '')},${escapeCSVCell(nutrition.avgCalories.toFixed(0))},${escapeCSVCell(nutrition.avgSteps.toFixed(0))}\n`;
+                        });
+                    }
+                });
+                csvContent += '\n';
+                
+                // Section 9: Summary Statistics
+                addProgressItem('מחשב סטטיסטיקות סיכום...', '');
+                csvContent += '=== סטטיסטיקות סיכום כלליות ===\n';
+                if (weightDataArray.length > 0) {
+                    const sortedWeights = sortDataAsc(weightDataArray);
+                    const firstWeight = sortedWeights[0].weight;
+                    const lastWeight = sortedWeights[sortedWeights.length - 1].weight;
+                    const totalChange = firstWeight - lastWeight;
+                    const totalDays = sortedWeights.length;
+                    const allWeights = sortedWeights.map(w => w.weight);
+                    const minWeight = Math.min(...allWeights);
+                    const maxWeight = Math.max(...allWeights);
+                    const avgWeight = calculateMean(allWeights);
+                    
+                    csvContent += `סטטיסטיקה,ערך\n`;
+                    csvContent += `משקל ראשון,${escapeCSVCell(firstWeight.toFixed(2))}\n`;
+                    csvContent += `משקל אחרון,${escapeCSVCell(lastWeight.toFixed(2))}\n`;
+                    csvContent += `משקל מינימלי,${escapeCSVCell(minWeight.toFixed(2))}\n`;
+                    csvContent += `משקל מקסימלי,${escapeCSVCell(maxWeight.toFixed(2))}\n`;
+                    csvContent += `ממוצע משקל,${escapeCSVCell(avgWeight.toFixed(2))}\n`;
+                    csvContent += `שינוי כולל,${escapeCSVCell(totalChange.toFixed(2))}\n`;
+                    csvContent += `מספר ימים,${escapeCSVCell(totalDays)}\n`;
+                    
+                    // Nutrition summary
+                    const nutritionHasHeaderForSummary = nutritionData.data[0] && nutritionData.data[0][0] && 
+                                         (typeof nutritionData.data[0][0] === 'string') && 
+                                         (nutritionData.data[0][0].includes('תאריך') || nutritionData.data[0][0].includes('Date'));
+                    const nutritionStartIndexForSummary = nutritionHasHeaderForSummary ? 1 : 0;
+                    const allNutritionRows = nutritionData.data.slice(nutritionStartIndexForSummary);
+                    
+                    if (allNutritionRows.length > 0) {
+                        const allCalories = allNutritionRows.map(row => parseFloat(row[1]) || 0).filter(c => c > 0);
+                        const allSteps = allNutritionRows.map(row => parseFloat(row[6]) || 0).filter(s => s > 0);
+                        if (allCalories.length > 0) {
+                            csvContent += `ממוצע קלוריות (${allCalories.length} ימים),${escapeCSVCell(calculateMean(allCalories).toFixed(0))}\n`;
+                        }
+                        if (allSteps.length > 0) {
+                            csvContent += `ממוצע צעדים (${allSteps.length} ימים),${escapeCSVCell(calculateMean(allSteps).toFixed(0))}\n`;
+                        }
+                    }
+                }
+                
+                addProgressItem('✓ כל הנתונים מוכנים', 'completed');
+                addProgressItem('מוריד קובץ...', '');
+                
+                // Create and download file
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                const now = new Date();
+                const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                link.setAttribute('download', `כל_הנתונים_${dateStr}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                addProgressItem('✓ הורדה הושלמה בהצלחה!', 'completed');
+                
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                addProgressItem('✗ שגיאה: ' + error.message, 'error');
+            } finally {
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
