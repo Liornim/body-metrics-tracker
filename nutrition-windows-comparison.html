@@ -223,7 +223,11 @@
             }
             
             .chart-wrapper {
-                height: 300px;
+                height: 250px;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -244,12 +248,7 @@
             
             <div id="error" class="error" style="display: none;"></div>
             
-            <div id="chartContainer" class="chart-container" style="display: none;">
-                <h2 class="chart-title">📊 גרף קלוריות ממוצעות לפי חלונות זמן</h2>
-                <div class="chart-wrapper">
-                    <canvas id="caloriesChart"></canvas>
-                </div>
-            </div>
+            <div id="chartsContainer" class="charts-grid" style="display: none;"></div>
             
             <div id="tablesContainer"></div>
         </div>
@@ -753,116 +752,76 @@
             });
         }
         
-        let caloriesChart = null;
+        let charts = {};
         
-        function displayChart() {
-            // Prepare data: all windows for each window size
-            const labels = windowSizes.map(size => `${size} ימים`);
-            const datasets = [];
+        function createChartForWindowSize(windowSize, containerId) {
+            const windows = calculatedData[windowSize] || [];
             
-            // Colors for different window numbers
-            const colors = [
-                { border: '#667eea', background: 'rgba(102, 126, 234, 0.1)' },  // Window 1 - purple
-                { border: '#4CAF50', background: 'rgba(76, 175, 80, 0.1)' },    // Window 2 - green
-                { border: '#ff9800', background: 'rgba(255, 152, 0, 0.1)' },    // Window 3 - orange
-                { border: '#f44336', background: 'rgba(244, 67, 54, 0.1)' },    // Window 4 - red
-                { border: '#2196F3', background: 'rgba(33, 150, 243, 0.1)' }      // Window 5 - blue
-            ];
-            
-            // Create a dataset for each window number (1-5)
-            for (let windowNum = 1; windowNum <= 5; windowNum++) {
-                const data = [];
-                
-                windowSizes.forEach(windowSize => {
-                    const windows = calculatedData[windowSize] || [];
-                    // Find window with this window number
-                    const window = windows.find(w => w.windowNumber === windowNum);
-                    if (window) {
-                        data.push(Math.round(window.avgCalories));
-                    } else {
-                        data.push(null); // No data for this window number at this size
-                    }
-                });
-                
-                // Only add dataset if there's at least one data point
-                if (data.some(val => val !== null)) {
-                    const colorIndex = (windowNum - 1) % colors.length;
-                    datasets.push({
-                        label: `חלון ${windowNum}`,
-                        data: data,
-                        borderColor: colors[colorIndex].border,
-                        backgroundColor: colors[colorIndex].background,
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 5,
-                        pointBackgroundColor: colors[colorIndex].border,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 7,
-                        pointHoverBackgroundColor: colors[colorIndex].border,
-                        pointHoverBorderColor: '#fff',
-                        pointHoverBorderWidth: 2,
-                        spanGaps: true
-                    });
-                }
-            }
-            
-            if (datasets.length === 0) {
-                document.getElementById('chartContainer').style.display = 'none';
+            if (windows.length === 0) {
                 return;
             }
             
-            document.getElementById('chartContainer').style.display = 'block';
+            // Prepare data: all windows for this window size
+            // Use end date from dateRange (format: "DD/MM/YYYY - DD/MM/YYYY")
+            const labels = windows.map(w => {
+                const dateRange = w.dateRange || '';
+                // Extract end date (after the dash)
+                const parts = dateRange.split(' - ');
+                if (parts.length === 2) {
+                    return parts[1]; // Return end date
+                }
+                return dateRange; // Fallback to full range if format is different
+            });
+            const calories = windows.map(w => Math.round(w.avgCalories));
             
-            const ctx = document.getElementById('caloriesChart').getContext('2d');
+            const ctx = document.getElementById(containerId).getContext('2d');
             
             // Destroy existing chart if it exists
-            if (caloriesChart) {
-                caloriesChart.destroy();
+            if (charts[windowSize]) {
+                charts[windowSize].destroy();
             }
             
-            caloriesChart = new Chart(ctx, {
+            charts[windowSize] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: datasets
+                    datasets: [{
+                        label: 'קלוריות ממוצעות',
+                        data: calories,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#764ba2',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    size: 13,
-                                    family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-                                },
-                                padding: 12,
-                                usePointStyle: true
-                            }
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
+                            padding: 10,
                             titleFont: {
-                                size: 14
+                                size: 13
                             },
                             bodyFont: {
-                                size: 13
+                                size: 12
                             },
                             callbacks: {
                                 label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    if (value === null) return '';
-                                    return label + ': ' + value.toLocaleString() + ' קלוריות';
+                                    return 'קלוריות: ' + context.parsed.y.toLocaleString();
                                 }
                             }
                         }
@@ -872,15 +831,15 @@
                             beginAtZero: false,
                             title: {
                                 display: true,
-                                text: 'קלוריות ממוצעות',
+                                text: 'קלוריות',
                                 font: {
-                                    size: 14,
+                                    size: 12,
                                     weight: 'bold'
                                 }
                             },
                             ticks: {
                                 font: {
-                                    size: 12
+                                    size: 11
                                 },
                                 callback: function(value) {
                                     return value.toLocaleString();
@@ -893,15 +852,15 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'גודל חלון (ימים)',
+                                text: 'חלון',
                                 font: {
-                                    size: 14,
+                                    size: 12,
                                     weight: 'bold'
                                 }
                             },
                             ticks: {
                                 font: {
-                                    size: 12
+                                    size: 11
                                 }
                             },
                             grid: {
@@ -911,6 +870,50 @@
                     }
                 }
             });
+        }
+        
+        function displayChart() {
+            const chartsContainer = document.getElementById('chartsContainer');
+            chartsContainer.innerHTML = '';
+            
+            const chartSizes = [4, 7, 14, 21];
+            let hasData = false;
+            
+            chartSizes.forEach(windowSize => {
+                const windows = calculatedData[windowSize] || [];
+                if (windows.length > 0) {
+                    hasData = true;
+                    
+                    const chartContainer = document.createElement('div');
+                    chartContainer.className = 'chart-container';
+                    
+                    const title = document.createElement('h3');
+                    title.className = 'chart-title';
+                    title.textContent = `📊 חלון ${windowSize} ימים`;
+                    chartContainer.appendChild(title);
+                    
+                    const chartWrapper = document.createElement('div');
+                    chartWrapper.className = 'chart-wrapper';
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.id = `chart_${windowSize}`;
+                    chartWrapper.appendChild(canvas);
+                    
+                    chartContainer.appendChild(chartWrapper);
+                    chartsContainer.appendChild(chartContainer);
+                    
+                    // Create chart after DOM is updated
+                    setTimeout(() => {
+                        createChartForWindowSize(windowSize, `chart_${windowSize}`);
+                    }, 100);
+                }
+            });
+            
+            if (hasData) {
+                chartsContainer.style.display = 'grid';
+            } else {
+                chartsContainer.style.display = 'none';
+            }
         }
         
         function showError(message) {
