@@ -134,14 +134,21 @@
             border-radius: 10px;
         }
         
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+        }
+        
         table {
             width: 100%;
+            min-width: 700px;
             border-collapse: collapse;
             background: white;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
         }
         
         thead {
@@ -149,17 +156,66 @@
             color: white;
         }
         
+        tbody {
+            display: table-row-group;
+        }
+        
         th {
-            padding: 15px;
+            padding: 12px 8px;
             text-align: center;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            min-width: 80px;
         }
         
         td {
-            padding: 12px;
+            padding: 10px 8px;
             text-align: center;
             border-bottom: 1px solid #e0e0e0;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 768px) {
+            th {
+                padding: 10px 5px;
+                font-size: 0.75rem;
+                min-width: 70px;
+            }
+            
+            td {
+                padding: 8px 5px;
+                font-size: 0.75rem;
+            }
+            
+            .table-title {
+                font-size: 1.2rem;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            th {
+                padding: 8px 4px;
+                font-size: 0.7rem;
+                min-width: 60px;
+            }
+            
+            td {
+                padding: 6px 4px;
+                font-size: 0.7rem;
+            }
+            
+            .window-number {
+                font-size: 0.75rem;
+                padding: 3px 6px;
+            }
+            
+            .delta {
+                font-size: 0.7rem;
+                padding: 2px 5px;
+            }
         }
         
         tbody tr:hover {
@@ -220,6 +276,73 @@
             padding: 40px;
             color: #666;
             font-size: 1.2rem;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        .legend-color.muscle {
+            background: #4CAF50;
+        }
+        
+        .legend-color.muscle-avg {
+            background: #81C784;
+            border: 2px dashed #4CAF50;
+        }
+        
+        .legend-color.fat {
+            background: #f44336;
+        }
+        
+        .legend-color.fat-avg {
+            background: #e57373;
+            border: 2px dashed #f44336;
         }
     </style>
 </head>
@@ -329,25 +452,49 @@
             const avgMuscle = validMuscleData.length > 0 ? totalMuscle / validMuscleData.length : 0;
             const avgFat = validFatData.length > 0 ? totalFat / validFatData.length : 0;
             
-            // Find min and max
-            const muscleValues = validMuscleData.map(item => item.muscle);
-            const fatValues = validFatData.map(item => item.fat);
+            // Sort data by date (oldest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
             
-            const minMuscle = muscleValues.length > 0 ? Math.min(...muscleValues) : 0;
-            const maxMuscle = muscleValues.length > 0 ? Math.max(...muscleValues) : 0;
-            const minFat = fatValues.length > 0 ? Math.min(...fatValues) : 0;
-            const maxFat = fatValues.length > 0 ? Math.max(...fatValues) : 0;
+            // Calculate average of first 2 weeks (14 days) vs last 2 weeks (14 days)
+            const firstTwoWeeks = sortedData.slice(0, 14).filter(item => item.muscle > 0 || item.fat > 0);
+            const lastTwoWeeks = sortedData.slice(-14).filter(item => item.muscle > 0 || item.fat > 0);
+            
+            // Calculate muscle averages
+            const firstTwoWeeksMuscle = firstTwoWeeks.filter(item => item.muscle > 0);
+            const lastTwoWeeksMuscle = lastTwoWeeks.filter(item => item.muscle > 0);
+            
+            const avgMuscleFirstTwoWeeks = firstTwoWeeksMuscle.length > 0 ? 
+                firstTwoWeeksMuscle.reduce((sum, item) => sum + item.muscle, 0) / firstTwoWeeksMuscle.length : 0;
+            const avgMuscleLastTwoWeeks = lastTwoWeeksMuscle.length > 0 ? 
+                lastTwoWeeksMuscle.reduce((sum, item) => sum + item.muscle, 0) / lastTwoWeeksMuscle.length : 0;
+            
+            const muscleChange = avgMuscleLastTwoWeeks - avgMuscleFirstTwoWeeks; // positive = increase (good)
+            
+            // Calculate fat averages
+            const firstTwoWeeksFat = firstTwoWeeks.filter(item => item.fat > 0);
+            const lastTwoWeeksFat = lastTwoWeeks.filter(item => item.fat > 0);
+            
+            const avgFatFirstTwoWeeks = firstTwoWeeksFat.length > 0 ? 
+                firstTwoWeeksFat.reduce((sum, item) => sum + item.fat, 0) / firstTwoWeeksFat.length : 0;
+            const avgFatLastTwoWeeks = lastTwoWeeksFat.length > 0 ? 
+                lastTwoWeeksFat.reduce((sum, item) => sum + item.fat, 0) / lastTwoWeeksFat.length : 0;
+            
+            const fatChange = avgFatLastTwoWeeks - avgFatFirstTwoWeeks; // positive = increase (bad), negative = decrease (good)
             
             return {
                 totalDays: data.length,
                 avgMuscle: avgMuscle,
                 avgFat: avgFat,
-                minMuscle: minMuscle,
-                maxMuscle: maxMuscle,
-                minFat: minFat,
-                maxFat: maxFat,
-                muscleChange: maxMuscle - minMuscle,
-                fatChange: maxFat - minFat
+                avgMuscleFirstTwoWeeks: avgMuscleFirstTwoWeeks,
+                avgMuscleLastTwoWeeks: avgMuscleLastTwoWeeks,
+                avgFatFirstTwoWeeks: avgFatFirstTwoWeeks,
+                avgFatLastTwoWeeks: avgFatLastTwoWeeks,
+                muscleChange: muscleChange,
+                fatChange: fatChange
             };
         }
         
@@ -355,6 +502,14 @@
         function displaySummary(summary) {
             const summaryDiv = document.getElementById('summary');
             const statsDiv = document.getElementById('summaryStats');
+            
+            // For muscle change: positive (increase) is good (green), negative (decrease) is bad (red)
+            const muscleChangeColor = summary.muscleChange > 0 ? '#4CAF50' : summary.muscleChange < 0 ? '#f44336' : '#666';
+            const muscleChangeSign = summary.muscleChange > 0 ? '+' : '';
+            
+            // For fat change: negative (decrease) is good (green), positive (increase) is bad (red)
+            const fatChangeColor = summary.fatChange < 0 ? '#4CAF50' : summary.fatChange > 0 ? '#f44336' : '#666';
+            const fatChangeSign = summary.fatChange > 0 ? '+' : '';
             
             statsDiv.innerHTML = `
                 <div class="stat-item">
@@ -370,22 +525,430 @@
                     <div class="stat-label">סה"כ ימים במעקב</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" style="color: #4CAF50;">${summary.muscleChange.toFixed(2)}</div>
-                    <div class="stat-label">טווח שינוי שריר (ק"ג)</div>
+                    <div class="stat-value" style="color: ${muscleChangeColor};">${muscleChangeSign}${summary.muscleChange.toFixed(2)}</div>
+                    <div class="stat-label">שינוי שריר (2 שבועות ראשונים vs אחרונים)</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" style="color: #f44336;">${summary.fatChange.toFixed(2)}</div>
-                    <div class="stat-label">טווח שינוי שומן (ק"ג)</div>
+                    <div class="stat-value" style="color: ${fatChangeColor};">${fatChangeSign}${summary.fatChange.toFixed(2)}</div>
+                    <div class="stat-label">שינוי שומן (2 שבועות ראשונים vs אחרונים)</div>
                 </div>
             `;
             
             summaryDiv.style.display = 'block';
         }
         
+        // Calculate 7-day windows comparison (last 5 windows)
+        // Window 1: last 7 days vs 7 days ending the day before last day
+        // Window 2: 7 days ending the day before last day vs 7 days before that
+        // etc.
+        function calculate7DayWindows(data) {
+            // Sort data by date (oldest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            const windows = [];
+            const windowSize = 7;
+            
+            // We need at least 14 days to compare (7 current + 7 previous)
+            if (sortedData.length < 14) {
+                return windows;
+            }
+            
+            // Window 1: last 7 days (indices -7 to -1) vs 7 days ending before last day (indices -8 to -2)
+            // Window 2: 7 days ending before last day (indices -8 to -2) vs 7 days before that (indices -9 to -3)
+            // Window 3: 7 days ending 2 days before last (indices -9 to -3) vs 7 days before that (indices -10 to -4)
+            // etc.
+            
+            for (let offset = 0; offset < 5; offset++) {
+                // Current window: ends at (sortedData.length - 1 - offset), starts 7 days before
+                const currentEnd = sortedData.length - offset;
+                const currentStart = currentEnd - windowSize;
+                
+                // Previous window: ends the day before current window starts, starts 7 days before that
+                const previousEnd = currentStart;
+                const previousStart = previousEnd - windowSize;
+                
+                // Check if we have enough data
+                if (previousStart < 0) {
+                    break;
+                }
+                
+                const currentWindow = sortedData.slice(currentStart, currentEnd);
+                const previousWindow = sortedData.slice(previousStart, previousEnd);
+                
+                if (currentWindow.length === windowSize && previousWindow.length === windowSize) {
+                    // Calculate averages for current window (7 days)
+                    const currentMuscle = currentWindow.filter(item => item.muscle > 0);
+                    const currentFat = currentWindow.filter(item => item.fat > 0);
+                    
+                    const avgMuscleCurrent = currentMuscle.length > 0 ? 
+                        currentMuscle.reduce((sum, item) => sum + item.muscle, 0) / currentMuscle.length : 0;
+                    const avgFatCurrent = currentFat.length > 0 ? 
+                        currentFat.reduce((sum, item) => sum + item.fat, 0) / currentFat.length : 0;
+                    
+                    // Calculate averages for previous window (7 days before)
+                    const previousMuscle = previousWindow.filter(item => item.muscle > 0);
+                    const previousFat = previousWindow.filter(item => item.fat > 0);
+                    
+                    const avgMusclePrevious = previousMuscle.length > 0 ? 
+                        previousMuscle.reduce((sum, item) => sum + item.muscle, 0) / previousMuscle.length : 0;
+                    const avgFatPrevious = previousFat.length > 0 ? 
+                        previousFat.reduce((sum, item) => sum + item.fat, 0) / previousFat.length : 0;
+                    
+                    const muscleChange = avgMuscleCurrent - avgMusclePrevious;
+                    const fatChange = avgFatCurrent - avgFatPrevious;
+                    
+                    const firstDate = parseDate(currentWindow[0].date);
+                    const lastDate = parseDate(currentWindow[currentWindow.length - 1].date);
+                    const prevFirstDate = parseDate(previousWindow[0].date);
+                    const prevLastDate = parseDate(previousWindow[previousWindow.length - 1].date);
+                    
+                    windows.push({
+                        windowNumber: offset + 1,
+                        range: `${formatDate(firstDate)} - ${formatDate(lastDate)}`,
+                        previousRange: `${formatDate(prevFirstDate)} - ${formatDate(prevLastDate)}`,
+                        avgMuscleCurrent: avgMuscleCurrent,
+                        avgMusclePrevious: avgMusclePrevious,
+                        avgFatCurrent: avgFatCurrent,
+                        avgFatPrevious: avgFatPrevious,
+                        muscleChange: muscleChange,
+                        fatChange: fatChange
+                    });
+                }
+            }
+            
+            return windows;
+        }
+        
+        // Calculate 5-day moving average (only full windows)
+        function calculateMovingAverage(data, windowSize = 5) {
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            const muscleAverages = [];
+            const fatAverages = [];
+            const dates = [];
+            
+            // Only calculate average when we have a full 5-day window
+            for (let i = windowSize - 1; i < sortedData.length; i++) {
+                const start = i - windowSize + 1;
+                const end = i + 1;
+                const window = sortedData.slice(start, end);
+                
+                // Check if we have exactly 5 days
+                if (window.length === windowSize) {
+                    const muscleValues = window.filter(item => item.muscle > 0).map(item => item.muscle);
+                    const fatValues = window.filter(item => item.fat > 0).map(item => item.fat);
+                    
+                    // Only add if we have at least some data
+                    if (muscleValues.length > 0 || fatValues.length > 0) {
+                        const muscleAvg = muscleValues.length > 0 ? 
+                            muscleValues.reduce((sum, val) => sum + val, 0) / muscleValues.length : null;
+                        const fatAvg = fatValues.length > 0 ? 
+                            fatValues.reduce((sum, val) => sum + val, 0) / fatValues.length : null;
+                        
+                        dates.push(sortedData[i].date);
+                        muscleAverages.push(muscleAvg);
+                        fatAverages.push(fatAvg);
+                    }
+                }
+            }
+            
+            // Sample to get approximately 20 points
+            const sampleRate = Math.max(1, Math.floor(dates.length / 20));
+            const sampledDates = [];
+            const sampledMuscle = [];
+            const sampledFat = [];
+            
+            for (let i = 0; i < dates.length; i += sampleRate) {
+                sampledDates.push(dates[i]);
+                sampledMuscle.push(muscleAverages[i]);
+                sampledFat.push(fatAverages[i]);
+            }
+            
+            // Always include the last point
+            if (dates.length > 0 && sampledDates[sampledDates.length - 1] !== dates[dates.length - 1]) {
+                sampledDates.push(dates[dates.length - 1]);
+                sampledMuscle.push(muscleAverages[muscleAverages.length - 1]);
+                sampledFat.push(fatAverages[fatAverages.length - 1]);
+            }
+            
+            return { dates: sampledDates, muscleAverages: sampledMuscle, fatAverages: sampledFat, rawData: sortedData };
+        }
+        
+        // Draw chart
+        function drawChart(data) {
+            const chartData = calculateMovingAverage(data, 5);
+            
+            const resultsDiv = document.getElementById('results');
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+            
+            chartContainer.innerHTML = `
+                <div class="chart-title">📊 גרף היסטורי - שריר ושומן (ממוצע נע 5 ימים)</div>
+                <div class="chart-wrapper">
+                    <canvas id="historyChart" width="800" height="400"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color muscle-avg"></div>
+                        <span>שריר (ממוצע 5 ימים)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color fat-avg"></div>
+                        <span>שומן (ממוצע 5 ימים)</span>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.appendChild(chartContainer);
+            
+            const canvas = document.getElementById('historyChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 400;
+            
+            const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+            
+            // Find min and max values from averages only
+            const allMuscleAvgs = chartData.muscleAverages.filter(val => val !== null);
+            const allFatAvgs = chartData.fatAverages.filter(val => val !== null);
+            
+            if (allMuscleAvgs.length === 0 && allFatAvgs.length === 0) {
+                return; // No data to display
+            }
+            
+            const minMuscle = allMuscleAvgs.length > 0 ? Math.min(...allMuscleAvgs) : 0;
+            const maxMuscle = allMuscleAvgs.length > 0 ? Math.max(...allMuscleAvgs) : 0;
+            const minFat = allFatAvgs.length > 0 ? Math.min(...allFatAvgs) : 0;
+            const maxFat = allFatAvgs.length > 0 ? Math.max(...allFatAvgs) : 0;
+            
+            const minY = Math.min(minMuscle || 0, minFat || 0) - 1;
+            const maxY = Math.max(maxMuscle || 0, maxFat || 0) + 1;
+            const yRange = maxY - minY;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, padding.top + chartHeight);
+            ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+            ctx.stroke();
+            
+            // Draw labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const value = maxY - (yRange / 5) * i;
+                const y = padding.top + (chartHeight / 5) * i;
+                ctx.fillText(value.toFixed(1), padding.left - 10, y + 4);
+            }
+            
+            // Draw date labels on X axis
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            const dateCount = chartData.dates.length;
+            const dateStep = Math.max(1, Math.floor(dateCount / 8)); // Show about 8 dates
+            
+            for (let i = 0; i < dateCount; i += dateStep) {
+                const x = padding.left + (chartWidth / (dateCount - 1)) * i;
+                const date = chartData.dates[i];
+                if (date) {
+                    const dateStr = date.split('/').slice(0, 2).join('/'); // Show only DD/MM
+                    ctx.fillText(dateStr, x, padding.top + chartHeight + 20);
+                }
+            }
+            
+            // Always show last date
+            if (dateCount > 0) {
+                const lastX = padding.left + chartWidth;
+                const lastDate = chartData.dates[dateCount - 1];
+                if (lastDate) {
+                    const dateStr = lastDate.split('/').slice(0, 2).join('/');
+                    ctx.fillText(dateStr, lastX, padding.top + chartHeight + 20);
+                }
+            }
+            
+            // Draw muscle average line and points
+            const muscleAvgPoints = [];
+            
+            chartData.dates.forEach((date, index) => {
+                if (chartData.muscleAverages[index] !== null) {
+                    const x = padding.left + (chartWidth / (dateCount - 1)) * index;
+                    const y = padding.top + chartHeight - ((chartData.muscleAverages[index] - minY) / yRange) * chartHeight;
+                    muscleAvgPoints.push({ x, y, value: chartData.muscleAverages[index] });
+                }
+            });
+            
+            if (muscleAvgPoints.length > 1) {
+                ctx.strokeStyle = '#81C784';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(muscleAvgPoints[0].x, muscleAvgPoints[0].y);
+                for (let i = 1; i < muscleAvgPoints.length; i++) {
+                    ctx.lineTo(muscleAvgPoints[i].x, muscleAvgPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Draw muscle points
+            ctx.fillStyle = '#4CAF50';
+            muscleAvgPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw fat average line and points
+            const fatAvgPoints = [];
+            
+            chartData.dates.forEach((date, index) => {
+                if (chartData.fatAverages[index] !== null) {
+                    const x = padding.left + (chartWidth / (dateCount - 1)) * index;
+                    const y = padding.top + chartHeight - ((chartData.fatAverages[index] - minY) / yRange) * chartHeight;
+                    fatAvgPoints.push({ x, y, value: chartData.fatAverages[index] });
+                }
+            });
+            
+            if (fatAvgPoints.length > 1) {
+                ctx.strokeStyle = '#e57373';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(fatAvgPoints[0].x, fatAvgPoints[0].y);
+                for (let i = 1; i < fatAvgPoints.length; i++) {
+                    ctx.lineTo(fatAvgPoints[i].x, fatAvgPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Draw fat points
+            ctx.fillStyle = '#f44336';
+            fatAvgPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        // Display 7-day comparison table
+        function display7DayComparison(data) {
+            const resultsDiv = document.getElementById('results');
+            const windows = calculate7DayWindows(data);
+            
+            if (windows.length === 0) {
+                return;
+            }
+            
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            let tableHTML = `
+                <div class="table-title">השוואת יומית לפי חלונות 7 ימים - 5 חלונות אחרונים</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>חלון</th>
+                                <th>תקופה (7 ימים)</th>
+                                <th>💪 שריר ממוצע (7 ימים)</th>
+                                <th>שינוי שריר</th>
+                                <th>🥑 שומן ממוצע (7 ימים)</th>
+                                <th>שינוי שומן</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Reverse windows to show oldest first
+            const reversedWindows = [...windows].reverse();
+            
+            reversedWindows.forEach((window, index) => {
+                // Calculate change from previous window (previous window in array, since we go forward now)
+                let muscleChangeBetweenWindows = null;
+                let fatChangeBetweenWindows = null;
+                
+                if (index > 0) {
+                    // Compare with previous window (which is the older window chronologically)
+                    const previousWindow = reversedWindows[index - 1];
+                    muscleChangeBetweenWindows = window.avgMuscleCurrent - previousWindow.avgMuscleCurrent;
+                    fatChangeBetweenWindows = window.avgFatCurrent - previousWindow.avgFatCurrent;
+                }
+                
+                const muscleChangeClass = muscleChangeBetweenWindows !== null ? 
+                    (muscleChangeBetweenWindows > 0 ? 'positive' : muscleChangeBetweenWindows < 0 ? 'negative' : 'neutral') : '';
+                const fatChangeClass = fatChangeBetweenWindows !== null ? 
+                    (fatChangeBetweenWindows > 0 ? 'negative' : fatChangeBetweenWindows < 0 ? 'positive' : 'neutral') : '';
+                
+                const muscleChangeHTML = muscleChangeBetweenWindows !== null ? 
+                    `<span class="delta ${muscleChangeClass}">${muscleChangeBetweenWindows > 0 ? '↑' : muscleChangeBetweenWindows < 0 ? '↓' : '→'} ${Math.abs(muscleChangeBetweenWindows).toFixed(2)}</span>` : 
+                    '--';
+                const fatChangeHTML = fatChangeBetweenWindows !== null ? 
+                    `<span class="delta ${fatChangeClass}">${fatChangeBetweenWindows > 0 ? '↑' : fatChangeBetweenWindows < 0 ? '↓' : '→'} ${Math.abs(fatChangeBetweenWindows).toFixed(2)}</span>` : 
+                    '--';
+                
+                tableHTML += `
+                    <tr>
+                        <td><span class="window-number">${reversedWindows.length - index}</span></td>
+                        <td>${window.range}</td>
+                        <td class="muscle-value">${window.avgMuscleCurrent > 0 ? window.avgMuscleCurrent.toFixed(2) : '--'}</td>
+                        <td>${muscleChangeHTML}</td>
+                        <td class="fat-value">${window.avgFatCurrent > 0 ? window.avgFatCurrent.toFixed(2) : '--'}</td>
+                        <td>${fatChangeHTML}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            tableContainer.innerHTML = tableHTML;
+            resultsDiv.appendChild(tableContainer);
+        }
+        
         // Display results
         function displayResults() {
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
+            
+            // Draw chart first
+            drawChart(currentData);
+            
+            // Display 7-day comparison table
+            display7DayComparison(currentData);
             
             calculatedWindows = [];
             
@@ -405,19 +968,20 @@
                 
                 let tableHTML = `
                     <div class="table-title">חלון ${windowSize} ימים</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>חלון</th>
-                                <th>תקופה</th>
-                                <th>ימים</th>
-                                <th>💪 שריר ממוצע (ק"ג)</th>
-                                <th>שינוי שריר</th>
-                                <th>🥑 שומן ממוצע (ק"ג)</th>
-                                <th>שינוי שומן</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>חלון</th>
+                                    <th>תקופה</th>
+                                    <th>ימים</th>
+                                    <th>💪 שריר ממוצע (ק"ג)</th>
+                                    <th>שינוי שריר</th>
+                                    <th>🥑 שומן ממוצע (ק"ג)</th>
+                                    <th>שינוי שומן</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                 `;
                 
                 let previousMuscleAvg = null;
@@ -464,8 +1028,9 @@
                 });
                 
                 tableHTML += `
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 `;
                 
                 tableContainer.innerHTML = tableHTML;
