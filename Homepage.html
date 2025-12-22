@@ -111,6 +111,18 @@
             font-weight: bold;
         }
         
+        .diff-positive {
+            color: #4CAF50;
+        }
+        
+        .diff-negative {
+            color: #f44336;
+        }
+        
+        .diff-neutral {
+            color: #ffa726;
+        }
+        
         .app-link {
             display: inline-block;
             background: linear-gradient(45deg, #2196F3, #1976D2);
@@ -187,25 +199,29 @@
         
         <div class="status-bar" style="margin-top: 20px;">
             <div class="status-item">
-                <div class="status-label">מקסימום קלוריות להיום יעד</div>
-                <div class="status-value" id="maxCaloriesTodayTarget">--</div>
+                <div class="status-label">שינוי שריר (7 ימים אחרונים)</div>
+                <div class="status-value" id="muscleChange7Days">--</div>
             </div>
             <div class="status-item">
-                <div class="status-label">מקסימום קלוריות להיום TDEE</div>
-                <div class="status-value" id="maxCaloriesTodayTdee">--</div>
+                <div class="status-label">שינוי שומן (7 ימים אחרונים)</div>
+                <div class="status-value" id="fatChange7Days">--</div>
             </div>
         </div>
         
         <div class="status-bar" style="margin-top: 20px;">
             <div class="status-item">
-                <div class="status-label">מחסור חלבון כולל</div>
-                <div class="status-value" id="maxProteinGap">--</div>
-                <div class="status-label" style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">יעד: <span id="proteinTarget">190</span> גרם</div>
+                <div class="status-label">%שומן – MA7</div>
+                <div class="status-value" id="fatPercentMA7">--</div>
+                <div class="status-label" style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">ממוצע נע 7 ימים</div>
+                <div class="status-label" style="font-size: 0.75rem; opacity: 0.6; margin-top: 3px;" id="fatPercentMA7WeekAgo"></div>
+                <div class="status-label" style="font-size: 0.75rem; margin-top: 3px; font-weight: bold;" id="fatPercentMA7Diff"></div>
             </div>
             <div class="status-item">
-                <div class="status-label">עודף/חוסר שומן כולל</div>
-                <div class="status-value" id="minFatGap">--</div>
-                <div class="status-label" style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">יעד: <span id="fatTarget">67</span> גרם</div>
+                <div class="status-label">שריר ק״ג MA7</div>
+                <div class="status-value" id="muscleKgMA7">--</div>
+                <div class="status-label" style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">ממוצע נע 7 ימים</div>
+                <div class="status-label" style="font-size: 0.75rem; opacity: 0.6; margin-top: 3px;" id="muscleKgMA7WeekAgo"></div>
+                <div class="status-label" style="font-size: 0.75rem; margin-top: 3px; font-weight: bold;" id="muscleKgMA7Diff"></div>
             </div>
         </div>
         
@@ -430,6 +446,7 @@
         const CALORIE_TARGET = 2250;
         const PROTEIN_GRAMS = 160;
         const FAT_PERCENT = 25;
+        const FAT_GRAMS = Math.round((CALORIE_TARGET * FAT_PERCENT / 100) / 9); // Calculate from percentage
         
         // Calculate target gap for a specific window (same logic as calorie-deficit-analysis-with-target-minus-one-table.html)
         function calculateWindowGap(nutritionData, windowDays) {
@@ -479,6 +496,241 @@
                 calorieTargetGap: calorieTargetGap,
                 tdeeGap: tdeeGap
             };
+        }
+        
+        // Parse DD/MM/YYYY date format
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+        
+        // Calculate MA7 for fat percent and muscle kg
+        function calculateMA7Metrics(dataRows) {
+            // Convert to objects with date, weight, muscle, fat
+            const bodyData = dataRows
+                .filter(row => row && row.length > 3)
+                .map(row => ({
+                    date: row[0],
+                    weight: parseFloat(row[1]) || 0,
+                    muscle: parseFloat(row[2]) || 0,
+                    fat: parseFloat(row[3]) || 0
+                }))
+                .filter(item => item.date && (item.weight > 0 || item.muscle > 0 || item.fat > 0));
+            
+            if (bodyData.length < 7) {
+                document.getElementById('fatPercentMA7').textContent = '--';
+                document.getElementById('muscleKgMA7').textContent = '--';
+                document.getElementById('fatPercentMA7WeekAgo').textContent = '';
+                document.getElementById('muscleKgMA7WeekAgo').textContent = '';
+                document.getElementById('fatPercentMA7Diff').textContent = '';
+                document.getElementById('muscleKgMA7Diff').textContent = '';
+                return;
+            }
+            
+            // Sort by date (oldest first)
+            const sortedData = [...bodyData].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            // Get last 7 days
+            const last7Days = sortedData.slice(-7);
+            
+            // Calculate fat percent for each day
+            const fatPercentValues = last7Days
+                .filter(item => item.weight > 0 && item.fat > 0)
+                .map(item => (item.fat / item.weight) * 100);
+            
+            // Calculate muscle kg for each day
+            const muscleKgValues = last7Days
+                .filter(item => item.muscle > 0)
+                .map(item => item.muscle);
+            
+            // Calculate MA7 (7-day moving average) for last 7 days
+            const ma7FatPercent = fatPercentValues.length > 0 ? 
+                fatPercentValues.reduce((sum, val) => sum + val, 0) / fatPercentValues.length : null;
+            const ma7MuscleKg = muscleKgValues.length > 0 ? 
+                muscleKgValues.reduce((sum, val) => sum + val, 0) / muscleKgValues.length : null;
+            
+            // Calculate MA7 for 7 days ago (if we have at least 14 days)
+            let ma7FatPercentWeekAgo = null;
+            let ma7MuscleKgWeekAgo = null;
+            
+            if (sortedData.length >= 14) {
+                // Get 7 days ending 7 days before the last day
+                const weekAgo7Days = sortedData.slice(-14, -7);
+                
+                // Calculate fat percent for week ago
+                const fatPercentValuesWeekAgo = weekAgo7Days
+                    .filter(item => item.weight > 0 && item.fat > 0)
+                    .map(item => (item.fat / item.weight) * 100);
+                
+                // Calculate muscle kg for week ago
+                const muscleKgValuesWeekAgo = weekAgo7Days
+                    .filter(item => item.muscle > 0)
+                    .map(item => item.muscle);
+                
+                ma7FatPercentWeekAgo = fatPercentValuesWeekAgo.length > 0 ? 
+                    fatPercentValuesWeekAgo.reduce((sum, val) => sum + val, 0) / fatPercentValuesWeekAgo.length : null;
+                ma7MuscleKgWeekAgo = muscleKgValuesWeekAgo.length > 0 ? 
+                    muscleKgValuesWeekAgo.reduce((sum, val) => sum + val, 0) / muscleKgValuesWeekAgo.length : null;
+            }
+            
+            // Display fat percent MA7
+            const fatPercentElement = document.getElementById('fatPercentMA7');
+            if (ma7FatPercent !== null) {
+                fatPercentElement.textContent = ma7FatPercent.toFixed(2) + '%';
+                fatPercentElement.style.color = 'white';
+            } else {
+                fatPercentElement.textContent = '--';
+            }
+            
+            // Calculate differences
+            const fatPercentDiff = (ma7FatPercent !== null && ma7FatPercentWeekAgo !== null) ? 
+                ma7FatPercent - ma7FatPercentWeekAgo : null;
+            const muscleKgDiff = (ma7MuscleKg !== null && ma7MuscleKgWeekAgo !== null) ? 
+                ma7MuscleKg - ma7MuscleKgWeekAgo : null;
+            
+            // Display fat percent MA7 week ago
+            const fatPercentWeekAgoElement = document.getElementById('fatPercentMA7WeekAgo');
+            if (ma7FatPercentWeekAgo !== null) {
+                fatPercentWeekAgoElement.textContent = 'לפני שבוע: ' + ma7FatPercentWeekAgo.toFixed(2) + '%';
+            } else {
+                fatPercentWeekAgoElement.textContent = '';
+            }
+            
+            // Display fat percent difference
+            const fatPercentDiffElement = document.getElementById('fatPercentMA7Diff');
+            if (fatPercentDiff !== null && fatPercentDiff !== 0) {
+                const sign = fatPercentDiff > 0 ? '+' : '';
+                fatPercentDiffElement.textContent = `${sign}${fatPercentDiff.toFixed(2)}%`;
+                // For fat: negative (decrease) is good (green), positive (increase) is bad (red)
+                fatPercentDiffElement.className = 'status-label ' + (fatPercentDiff < 0 ? 'diff-positive' : 'diff-negative');
+            } else {
+                fatPercentDiffElement.textContent = '';
+                fatPercentDiffElement.className = 'status-label';
+            }
+            
+            // Display muscle kg MA7
+            const muscleKgElement = document.getElementById('muscleKgMA7');
+            if (ma7MuscleKg !== null) {
+                muscleKgElement.textContent = ma7MuscleKg.toFixed(2) + ' ק"ג';
+                muscleKgElement.style.color = 'white';
+            } else {
+                muscleKgElement.textContent = '--';
+            }
+            
+            // Display muscle kg MA7 week ago
+            const muscleKgWeekAgoElement = document.getElementById('muscleKgMA7WeekAgo');
+            if (ma7MuscleKgWeekAgo !== null) {
+                muscleKgWeekAgoElement.textContent = 'לפני שבוע: ' + ma7MuscleKgWeekAgo.toFixed(2) + ' ק"ג';
+            } else {
+                muscleKgWeekAgoElement.textContent = '';
+            }
+            
+            // Display muscle kg difference
+            const muscleKgDiffElement = document.getElementById('muscleKgMA7Diff');
+            if (muscleKgDiff !== null && muscleKgDiff !== 0) {
+                const sign = muscleKgDiff > 0 ? '+' : '';
+                muscleKgDiffElement.textContent = `${sign}${muscleKgDiff.toFixed(2)} ק"ג`;
+                // For muscle: positive (increase) is good (green), negative (decrease) is bad (red)
+                muscleKgDiffElement.className = 'status-label ' + (muscleKgDiff > 0 ? 'diff-positive' : 'diff-negative');
+            } else {
+                muscleKgDiffElement.textContent = '';
+                muscleKgDiffElement.className = 'status-label';
+            }
+        }
+        
+        // Calculate muscle and fat change in last 7 days
+        function calculateMuscleFatChange7Days(dataRows) {
+            // Convert to objects with date, muscle, fat
+            const bodyData = dataRows
+                .filter(row => row && row.length > 3)
+                .map(row => ({
+                    date: row[0],
+                    weight: parseFloat(row[1]) || 0,
+                    muscle: parseFloat(row[2]) || 0,
+                    fat: parseFloat(row[3]) || 0
+                }))
+                .filter(item => item.date);
+            
+            if (bodyData.length < 14) {
+                document.getElementById('muscleChange7Days').textContent = '--';
+                document.getElementById('fatChange7Days').textContent = '--';
+                return;
+            }
+            
+            // Sort by date (oldest first)
+            const sortedData = [...bodyData].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            const windowSize = 7;
+            
+            // Get last 7 days (current window)
+            const currentEnd = sortedData.length;
+            const currentStart = currentEnd - windowSize;
+            const previousEnd = currentStart;
+            const previousStart = previousEnd - windowSize;
+            
+            if (previousStart < 0) {
+                document.getElementById('muscleChange7Days').textContent = '--';
+                document.getElementById('fatChange7Days').textContent = '--';
+                return;
+            }
+            
+            const currentWindow = sortedData.slice(currentStart, currentEnd);
+            const previousWindow = sortedData.slice(previousStart, previousEnd);
+            
+            // Calculate averages for current window (7 days)
+            const currentMuscle = currentWindow.filter(item => item.muscle > 0);
+            const currentFat = currentWindow.filter(item => item.fat > 0);
+            
+            const avgMuscleCurrent = currentMuscle.length > 0 ? 
+                currentMuscle.reduce((sum, item) => sum + item.muscle, 0) / currentMuscle.length : 0;
+            const avgFatCurrent = currentFat.length > 0 ? 
+                currentFat.reduce((sum, item) => sum + item.fat, 0) / currentFat.length : 0;
+            
+            // Calculate averages for previous window (7 days before)
+            const previousMuscle = previousWindow.filter(item => item.muscle > 0);
+            const previousFat = previousWindow.filter(item => item.fat > 0);
+            
+            const avgMusclePrevious = previousMuscle.length > 0 ? 
+                previousMuscle.reduce((sum, item) => sum + item.muscle, 0) / previousMuscle.length : 0;
+            const avgFatPrevious = previousFat.length > 0 ? 
+                previousFat.reduce((sum, item) => sum + item.fat, 0) / previousFat.length : 0;
+            
+            const muscleChange = avgMuscleCurrent - avgMusclePrevious;
+            const fatChange = avgFatCurrent - avgFatPrevious;
+            
+            // Display muscle change (positive = gain = green, negative = loss = red)
+            const muscleChangeElement = document.getElementById('muscleChange7Days');
+            if (muscleChange !== 0) {
+                const sign = muscleChange > 0 ? '+' : '';
+                muscleChangeElement.textContent = `${sign}${muscleChange.toFixed(2)} ק"ג`;
+                muscleChangeElement.style.color = muscleChange > 0 ? '#4CAF50' : '#f44336';
+            } else {
+                muscleChangeElement.textContent = '0.00 ק"ג';
+                muscleChangeElement.style.color = '#666';
+            }
+            
+            // Display fat change (positive = gain = red, negative = loss = green)
+            const fatChangeElement = document.getElementById('fatChange7Days');
+            if (fatChange !== 0) {
+                const sign = fatChange > 0 ? '+' : '';
+                fatChangeElement.textContent = `${sign}${fatChange.toFixed(2)} ק"ג`;
+                fatChangeElement.style.color = fatChange > 0 ? '#f44336' : '#4CAF50';
+            } else {
+                fatChangeElement.textContent = '0.00 ק"ג';
+                fatChangeElement.style.color = '#666';
+            }
         }
         
         // Calculate macros for given calories (same logic as macro-comparison-minus-one-table.html)
@@ -595,63 +847,7 @@
                         }
                     });
                     
-                    if (allCalorieTargetGaps.length > 0) {
-                        const minCalorieTargetGap = Math.min(...allCalorieTargetGaps);
-                        const minTdeeGap = Math.min(...allTdeeGaps);
-                        document.getElementById('maxCaloriesTodayTarget').textContent = minCalorieTargetGap.toFixed(0);
-                        document.getElementById('maxCaloriesTodayTdee').textContent = minTdeeGap.toFixed(0);
-                    } else {
-                        document.getElementById('maxCaloriesTodayTarget').textContent = '--';
-                        document.getElementById('maxCaloriesTodayTdee').textContent = '--';
-                    }
                     
-                    // Calculate total protein lack for all days tracked
-                    // Recalculate dataStartIndex to ensure it's available
-                    const macroDataStartIndex = hasHeader ? 1 : 0;
-                    const allDaysData = nutritionData.slice(macroDataStartIndex);
-                    
-                    // Calculate total actual protein for all days
-                    let totalActualProtein = 0;
-                    let totalActualFat = 0;
-                    let validDays = 0;
-                    
-                    allDaysData.forEach(row => {
-                        if (row && Array.isArray(row) && row.length >= 5) {
-                            const calories = parseFloat(row[1]) || 0;
-                            const fat = parseFloat(row[2]) || 0;
-                            const protein = parseFloat(row[4]) || 0;
-                            
-                            if (calories > 0 || protein > 0 || fat > 0) {
-                                totalActualProtein += protein;
-                                totalActualFat += fat;
-                                validDays++;
-                            }
-                        }
-                    });
-                    
-                    // Set target values (always visible)
-                    document.getElementById('proteinTarget').textContent = PROTEIN_GRAMS;
-                    document.getElementById('fatTarget').textContent = FAT_GRAMS;
-                    
-                    if (validDays > 0) {
-                        // Calculate total target for all days
-                        const targetMacros = calculateMacrosForCalories(CALORIE_TARGET);
-                        const totalTargetProtein = targetMacros.protein * validDays;
-                        const totalTargetFat = targetMacros.fat * validDays;
-                        
-                        // Calculate total lack: Target - Actual (positive = lack, negative = surplus)
-                        const totalProteinLack = totalTargetProtein - totalActualProtein;
-                        const totalFatGap = totalTargetFat - totalActualFat;
-                        
-                        // Display total protein lack (show as positive number if there's a lack)
-                        document.getElementById('maxProteinGap').textContent = totalProteinLack > 0 ? totalProteinLack.toFixed(0) : '0';
-                        
-                        // Display fat gap (negative = surplus, positive = lack)
-                        document.getElementById('minFatGap').textContent = totalFatGap.toFixed(0);
-                    } else {
-                        document.getElementById('maxProteinGap').textContent = '--';
-                        document.getElementById('minFatGap').textContent = '--';
-                    }
                 }
                 
                 // Load body metrics data for weight average
@@ -659,9 +855,18 @@
                 const bodyMetricsData = await bodyMetricsResponse.json();
                 
                 if (bodyMetricsData.success && bodyMetricsData.data) {
+                    // Check if first row is header
+                    const hasHeader = bodyMetricsData.data[0] && bodyMetricsData.data[0][0] && 
+                                     (typeof bodyMetricsData.data[0][0] === 'string') && 
+                                     (bodyMetricsData.data[0][0].includes('תאריך') || bodyMetricsData.data[0][0].includes('Date') || 
+                                      bodyMetricsData.data[0][0].includes('משקל') || bodyMetricsData.data[0][0].includes('Weight'));
+                    
+                    const startIndex = hasHeader ? 1 : 0;
+                    const dataRows = bodyMetricsData.data.slice(startIndex);
+                    
                     // Calculate last 3 days weight average from גיליון1, column משקל (ק״ג) which is index 1
-                    if (bodyMetricsData.data.length >= 3) {
-                        const last3Days = bodyMetricsData.data.slice(0, 3);
+                    if (dataRows.length >= 3) {
+                        const last3Days = dataRows.slice(0, 3);
                         const weightSum = last3Days.reduce((sum, row) => sum + (parseFloat(row[1]) || 0), 0);
                         const weightAvg = (weightSum / 3).toFixed(2);
                         document.getElementById('lastDaysAvgWeight').textContent = weightAvg + ' ק"ג';
@@ -669,7 +874,7 @@
                     
                     // Calculate total days tracked and weight loss
                     // Convert array format to objects and sort by date (like weight-summary-by-windows.html)
-                    const weightDataObjects = bodyMetricsData.data
+                    const weightDataObjects = dataRows
                         .filter(row => row && row.length > 1 && parseFloat(row[1]) > 0)
                         .map(row => ({
                             date: row[0],
@@ -682,18 +887,17 @@
                         document.getElementById('totalDays').textContent = totalDays;
                         
                         // Sort by date ascending (oldest first) - same as weight-summary-by-windows.html
-                        function parseDate(dateStr) {
-                            if (!dateStr) return new Date(0);
-                            const parts = dateStr.split('/');
-                            if (parts.length === 3) {
-                                return new Date(parts[2], parts[1] - 1, parts[0]);
-                            }
-                            return new Date(dateStr);
-                        }
-                        
                         const sortedData = [...weightDataObjects].sort((a, b) => {
-                            const dateA = parseDate(a.date);
-                            const dateB = parseDate(b.date);
+                            function parseDateLocal(dateStr) {
+                                if (!dateStr) return new Date(0);
+                                const parts = dateStr.split('/');
+                                if (parts.length === 3) {
+                                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                                }
+                                return new Date(dateStr);
+                            }
+                            const dateA = parseDateLocal(a.date);
+                            const dateB = parseDateLocal(b.date);
                             return dateA - dateB;
                         });
                         
@@ -702,13 +906,35 @@
                         const lastWeight = sortedData[sortedData.length - 1].weight; // Newest
                         const weightLoss = Math.max(0, firstWeight - lastWeight); // Weight loss = old - new
                         document.getElementById('weightLoss').textContent = weightLoss.toFixed(1) + ' ק"ג';
+                        
+                        // Calculate muscle and fat change in last 7 days
+                        calculateMuscleFatChange7Days(dataRows);
+                        
+                        // Calculate MA7 for fat percent and muscle kg
+                        calculateMA7Metrics(dataRows);
                     } else {
                         document.getElementById('totalDays').textContent = '--';
                         document.getElementById('weightLoss').textContent = '--';
+                        document.getElementById('muscleChange7Days').textContent = '--';
+                        document.getElementById('fatChange7Days').textContent = '--';
+                        document.getElementById('fatPercentMA7').textContent = '--';
+                        document.getElementById('muscleKgMA7').textContent = '--';
+                        document.getElementById('fatPercentMA7WeekAgo').textContent = '';
+                        document.getElementById('muscleKgMA7WeekAgo').textContent = '';
+                        document.getElementById('fatPercentMA7Diff').textContent = '';
+                        document.getElementById('muscleKgMA7Diff').textContent = '';
                     }
                 } else {
                     document.getElementById('totalDays').textContent = '--';
                     document.getElementById('weightLoss').textContent = '--';
+                    document.getElementById('muscleChange7Days').textContent = '--';
+                    document.getElementById('fatChange7Days').textContent = '--';
+                    document.getElementById('fatPercentMA7').textContent = '--';
+                    document.getElementById('muscleKgMA7').textContent = '--';
+                    document.getElementById('fatPercentMA7WeekAgo').textContent = '';
+                    document.getElementById('muscleKgMA7WeekAgo').textContent = '';
+                    document.getElementById('fatPercentMA7Diff').textContent = '';
+                    document.getElementById('muscleKgMA7Diff').textContent = '';
                 }
                 
             } catch (error) {
