@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ממוצעי MA7 של שריר ושומן לפי חלונות</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .refresh-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .summary h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .table-container {
+            margin-bottom: 40px;
+        }
+        
+        .table-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            min-width: 800px;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        tbody {
+            display: table-row-group;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 768px) {
+            th {
+                padding: 10px 5px;
+                font-size: 0.75rem;
+                min-width: 70px;
+            }
+            
+            td {
+                padding: 8px 5px;
+                font-size: 0.75rem;
+            }
+            
+            .table-title {
+                font-size: 1.2rem;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            th {
+                padding: 8px 4px;
+                font-size: 0.7rem;
+                min-width: 60px;
+            }
+            
+            td {
+                padding: 6px 4px;
+                font-size: 0.7rem;
+            }
+            
+            .window-number {
+                font-size: 0.75rem;
+                padding: 3px 6px;
+            }
+            
+            .delta {
+                font-size: 0.7rem;
+                padding: 2px 5px;
+            }
+        }
+        
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .window-number {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .muscle-value {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .fat-value {
+            color: #f44336;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .delta {
+            font-size: 0.85rem;
+            padding: 3px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: bold;
+        }
+        
+        .delta.positive {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .delta.negative {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .delta.neutral {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 ממוצעי MA7 של שריר ושומן לפי חלונות</h1>
+            <p>ניתוח ממוצעים נעים של 7 ימים עבור חלונות זמן שונים</p>
+        </div>
+        
+        <div class="content">
+            <div class="controls">
+                <button class="refresh-btn" onclick="loadData()">🔄 רענן נתונים</button>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                טוען נתונים...
+            </div>
+            
+            <div id="summary" class="summary" style="display: none;">
+                <h3>📊 סיכום כללי</h3>
+                <div class="summary-stats" id="summaryStats"></div>
+            </div>
+            
+            <div id="results"></div>
+        </div>
+    </div>
+    
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        const WINDOWS = [3, 5, 7, 9, 14, 21, 28];
+        const MA7_WINDOW_SIZE = 7;
+        
+        let currentData = [];
+        let calculatedWindows = [];
+        
+        // Parse DD/MM/YYYY date format
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+        
+        // Format date as DD/MM/YYYY
+        function formatDate(date) {
+            if (!date) return '';
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Calculate daily metrics for all data
+        function calculateDailyMetrics(data) {
+            return data.map(item => {
+                const weight = item.weight || 0;
+                const muscle = item.muscle || 0;
+                const fat = item.fat || 0;
+                
+                const fatPercent = weight > 0 ? (fat / weight) * 100 : 0;
+                const musclePercent = weight > 0 ? (muscle / weight) * 100 : 0;
+                const leanMass = weight - fat;
+                const muscleFatRatio = fat > 0 ? muscle / fat : 0;
+                
+                return {
+                    date: item.date,
+                    weight: weight,
+                    muscle: muscle,
+                    fat: fat,
+                    fatPercent: fatPercent,
+                    musclePercent: musclePercent,
+                    leanMass: leanMass,
+                    muscleFatRatio: muscleFatRatio
+                };
+            });
+        }
+        
+        // Calculate MA7 for a specific metric at a specific index
+        function calculateMA7At(metrics, index, metricName) {
+            // Need at least 7 days before this index
+            if (index < MA7_WINDOW_SIZE - 1) {
+                return null;
+            }
+            
+            const startIndex = index - MA7_WINDOW_SIZE + 1;
+            const endIndex = index + 1;
+            const window = metrics.slice(startIndex, endIndex);
+            
+            if (window.length !== MA7_WINDOW_SIZE) {
+                return null;
+            }
+            
+            // Filter valid values (greater than 0)
+            const validValues = window
+                .map(m => m[metricName])
+                .filter(val => val > 0);
+            
+            if (validValues.length === 0) {
+                return null;
+            }
+            
+            return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+        }
+        
+        // Calculate average for a specific metric within a window
+        function calculateAverageInWindow(windowMetrics, metricName) {
+            if (!windowMetrics || windowMetrics.length === 0) {
+                return null;
+            }
+            
+            // Filter valid values (greater than 0)
+            const validValues = windowMetrics
+                .map(m => m[metricName])
+                .filter(val => val > 0);
+            
+            if (validValues.length === 0) {
+                return null;
+            }
+            
+            return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+        }
+        
+        // Calculate windows with MA7 values for a specific window size
+        // MA7 is calculated as the average of the days within the window itself
+        function calculateWindowsWithMA7(data, windowSize) {
+            const windows = [];
+            
+            // Sort data by date (oldest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            // Calculate daily metrics
+            const dailyMetrics = calculateDailyMetrics(sortedData);
+            
+            // Group data into windows
+            for (let i = 0; i < sortedData.length; i += windowSize) {
+                const windowData = sortedData.slice(i, i + windowSize);
+                
+                if (windowData.length > 0) {
+                    // Get the daily metrics for the days in this window
+                    const windowMetrics = dailyMetrics.slice(i, i + windowData.length);
+                    
+                    // Calculate average for each metric within this window
+                    const ma7FatPercent = calculateAverageInWindow(windowMetrics, 'fatPercent');
+                    const ma7MusclePercent = calculateAverageInWindow(windowMetrics, 'musclePercent');
+                    const ma7LeanMass = calculateAverageInWindow(windowMetrics, 'leanMass');
+                    const ma7MuscleFatRatio = calculateAverageInWindow(windowMetrics, 'muscleFatRatio');
+                    const ma7FatKg = calculateAverageInWindow(windowMetrics, 'fat');
+                    
+                    const firstDate = parseDate(windowData[0].date);
+                    const lastDate = parseDate(windowData[windowData.length - 1].date);
+                    
+                    windows.push({
+                        windowNumber: Math.floor(i / windowSize) + 1,
+                        startDate: windowData[0].date,
+                        endDate: windowData[windowData.length - 1].date,
+                        daysCount: windowData.length,
+                        ma7FatPercent: ma7FatPercent,
+                        ma7MusclePercent: ma7MusclePercent,
+                        ma7LeanMass: ma7LeanMass,
+                        ma7MuscleFatRatio: ma7MuscleFatRatio,
+                        ma7FatKg: ma7FatKg,
+                        range: `${formatDate(firstDate)} - ${formatDate(lastDate)}`
+                    });
+                }
+            }
+            
+            return windows;
+        }
+        
+        // Calculate summary statistics with MA7
+        function calculateSummary(data) {
+            if (!data || data.length === 0) return null;
+            
+            // Sort data by date (oldest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                return dateA - dateB;
+            });
+            
+            // Calculate daily metrics
+            const dailyMetrics = calculateDailyMetrics(sortedData);
+            
+            // Calculate MA7 for last day
+            const lastIndex = dailyMetrics.length - 1;
+            const ma7FatPercent = calculateMA7At(dailyMetrics, lastIndex, 'fatPercent');
+            const ma7MusclePercent = calculateMA7At(dailyMetrics, lastIndex, 'musclePercent');
+            const ma7LeanMass = calculateMA7At(dailyMetrics, lastIndex, 'leanMass');
+            const ma7MuscleFatRatio = calculateMA7At(dailyMetrics, lastIndex, 'muscleFatRatio');
+            const ma7FatKg = calculateMA7At(dailyMetrics, lastIndex, 'fat');
+            
+            // Calculate MA7 for first two weeks vs last two weeks
+            const firstTwoWeeksEnd = Math.min(13, dailyMetrics.length - 1); // End of first 14 days (index 13)
+            const lastTwoWeeksStart = Math.max(0, dailyMetrics.length - 14);
+            
+            let ma7FatPercentFirst = null;
+            let ma7MusclePercentFirst = null;
+            let ma7LeanMassFirst = null;
+            let ma7MuscleFatRatioFirst = null;
+            let ma7FatKgFirst = null;
+            
+            if (firstTwoWeeksEnd >= MA7_WINDOW_SIZE - 1) {
+                ma7FatPercentFirst = calculateMA7At(dailyMetrics, firstTwoWeeksEnd, 'fatPercent');
+                ma7MusclePercentFirst = calculateMA7At(dailyMetrics, firstTwoWeeksEnd, 'musclePercent');
+                ma7LeanMassFirst = calculateMA7At(dailyMetrics, firstTwoWeeksEnd, 'leanMass');
+                ma7MuscleFatRatioFirst = calculateMA7At(dailyMetrics, firstTwoWeeksEnd, 'muscleFatRatio');
+                ma7FatKgFirst = calculateMA7At(dailyMetrics, firstTwoWeeksEnd, 'fat');
+            }
+            
+            let ma7FatPercentLast = null;
+            let ma7MusclePercentLast = null;
+            let ma7LeanMassLast = null;
+            let ma7MuscleFatRatioLast = null;
+            let ma7FatKgLast = null;
+            
+            if (lastIndex >= MA7_WINDOW_SIZE - 1) {
+                ma7FatPercentLast = ma7FatPercent;
+                ma7MusclePercentLast = ma7MusclePercent;
+                ma7LeanMassLast = ma7LeanMass;
+                ma7MuscleFatRatioLast = ma7MuscleFatRatio;
+                ma7FatKgLast = ma7FatKg;
+            }
+            
+            // Calculate changes
+            const fatPercentChange = (ma7FatPercentLast !== null && ma7FatPercentFirst !== null) ? 
+                ma7FatPercentLast - ma7FatPercentFirst : null;
+            const musclePercentChange = (ma7MusclePercentLast !== null && ma7MusclePercentFirst !== null) ? 
+                ma7MusclePercentLast - ma7MusclePercentFirst : null;
+            const leanMassChange = (ma7LeanMassLast !== null && ma7LeanMassFirst !== null) ? 
+                ma7LeanMassLast - ma7LeanMassFirst : null;
+            const muscleFatRatioChange = (ma7MuscleFatRatioLast !== null && ma7MuscleFatRatioFirst !== null) ? 
+                ma7MuscleFatRatioLast - ma7MuscleFatRatioFirst : null;
+            const fatKgChange = (ma7FatKgLast !== null && ma7FatKgFirst !== null) ? 
+                ma7FatKgLast - ma7FatKgFirst : null;
+            
+            return {
+                totalDays: data.length,
+                ma7FatPercent: ma7FatPercent,
+                ma7MusclePercent: ma7MusclePercent,
+                ma7LeanMass: ma7LeanMass,
+                ma7MuscleFatRatio: ma7MuscleFatRatio,
+                ma7FatKg: ma7FatKg,
+                fatPercentChange: fatPercentChange,
+                musclePercentChange: musclePercentChange,
+                leanMassChange: leanMassChange,
+                muscleFatRatioChange: muscleFatRatioChange,
+                fatKgChange: fatKgChange
+            };
+        }
+        
+        // Display summary
+        function displaySummary(summary) {
+            const summaryDiv = document.getElementById('summary');
+            const statsDiv = document.getElementById('summaryStats');
+            
+            statsDiv.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #f44336;">${summary.ma7FatPercent !== null ? summary.ma7FatPercent.toFixed(2) : '--'}%</div>
+                    <div class="stat-label">MA7 שומן%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #4CAF50;">${summary.ma7MusclePercent !== null ? summary.ma7MusclePercent.toFixed(2) : '--'}%</div>
+                    <div class="stat-label">MA7 שריר%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #2196F3;">${summary.ma7LeanMass !== null ? summary.ma7LeanMass.toFixed(2) : '--'} ק"ג</div>
+                    <div class="stat-label">MA7 מסה רזה</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #ff9800;">${summary.ma7MuscleFatRatio !== null ? summary.ma7MuscleFatRatio.toFixed(2) : '--'}</div>
+                    <div class="stat-label">MA7 יחס שריר/שומן</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #f44336;">${summary.ma7FatKg !== null ? summary.ma7FatKg.toFixed(2) : '--'} ק"ג</div>
+                    <div class="stat-label">MA7 שומן ק"ג</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${summary.totalDays}</div>
+                    <div class="stat-label">סה"כ ימים במעקב</div>
+                </div>
+            `;
+            
+            summaryDiv.style.display = 'block';
+        }
+        
+        // Display results
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            calculatedWindows = [];
+            
+            WINDOWS.forEach(windowSize => {
+                const windows = calculateWindowsWithMA7(currentData, windowSize);
+                calculatedWindows.push({ windowSize, windows });
+                
+                // Get only last 5 windows
+                const last5Windows = windows.slice(-5);
+                
+                if (last5Windows.length === 0) {
+                    return;
+                }
+                
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-container';
+                
+                let tableHTML = `
+                    <div class="table-title">חלון ${windowSize} ימים - ממוצעים נעים (MA7)</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>חלון</th>
+                                    <th>תקופה</th>
+                                    <th>ימים</th>
+                                    <th>MA7 שומן%</th>
+                                    <th>שינוי שומן%</th>
+                                    <th>MA7 שריר%</th>
+                                    <th>שינוי שריר%</th>
+                                    <th>MA7 מסה רזה</th>
+                                    <th>שינוי מסה רזה</th>
+                                    <th>MA7 יחס שריר/שומן</th>
+                                    <th>שינוי יחס</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                let previousValues = {
+                    ma7FatPercent: null,
+                    ma7MusclePercent: null,
+                    ma7LeanMass: null,
+                    ma7MuscleFatRatio: null
+                };
+                
+                last5Windows.forEach((window, index) => {
+                    // Calculate deltas from previous window
+                    let fatPercentDelta = null;
+                    let musclePercentDelta = null;
+                    let leanMassDelta = null;
+                    let muscleFatRatioDelta = null;
+                    
+                    if (index > 0 && previousValues.ma7FatPercent !== null) {
+                        if (window.ma7FatPercent !== null) {
+                            fatPercentDelta = window.ma7FatPercent - previousValues.ma7FatPercent;
+                        }
+                        if (window.ma7MusclePercent !== null) {
+                            musclePercentDelta = window.ma7MusclePercent - previousValues.ma7MusclePercent;
+                        }
+                        if (window.ma7LeanMass !== null) {
+                            leanMassDelta = window.ma7LeanMass - previousValues.ma7LeanMass;
+                        }
+                        if (window.ma7MuscleFatRatio !== null) {
+                            muscleFatRatioDelta = window.ma7MuscleFatRatio - previousValues.ma7MuscleFatRatio;
+                        }
+                    }
+                    
+                    const formatDelta = (delta, unit, isGoodPositive = false) => {
+                        if (delta === null) return '--';
+                        const sign = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+                        let className = 'neutral';
+                        if (isGoodPositive) {
+                            className = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
+                        } else {
+                            className = delta > 0 ? 'negative' : delta < 0 ? 'positive' : 'neutral';
+                        }
+                        return `<span class="delta ${className}">${sign} ${Math.abs(delta).toFixed(2)}${unit}</span>`;
+                    };
+                    
+                    tableHTML += `
+                        <tr>
+                            <td><span class="window-number">${window.windowNumber}</span></td>
+                            <td>${window.range}</td>
+                            <td>${window.daysCount}</td>
+                            <td class="fat-value">${window.ma7FatPercent !== null ? window.ma7FatPercent.toFixed(2) : '--'}%</td>
+                            <td>${formatDelta(fatPercentDelta, '%', false)}</td>
+                            <td class="muscle-value">${window.ma7MusclePercent !== null ? window.ma7MusclePercent.toFixed(2) : '--'}%</td>
+                            <td>${formatDelta(musclePercentDelta, '%', true)}</td>
+                            <td style="color: #2196F3; font-weight: bold;">${window.ma7LeanMass !== null ? window.ma7LeanMass.toFixed(2) : '--'} ק"ג</td>
+                            <td>${formatDelta(leanMassDelta, ' ק"ג', true)}</td>
+                            <td style="color: #ff9800; font-weight: bold;">${window.ma7MuscleFatRatio !== null ? window.ma7MuscleFatRatio.toFixed(2) : '--'}</td>
+                            <td>${formatDelta(muscleFatRatioDelta, '', true)}</td>
+                        </tr>
+                    `;
+                    
+                    // Update previous values
+                    previousValues = {
+                        ma7FatPercent: window.ma7FatPercent,
+                        ma7MusclePercent: window.ma7MusclePercent,
+                        ma7LeanMass: window.ma7LeanMass,
+                        ma7MuscleFatRatio: window.ma7MuscleFatRatio
+                    };
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                tableContainer.innerHTML = tableHTML;
+                resultsDiv.appendChild(tableContainer);
+            });
+        }
+        
+        // Load data from Google Sheets
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const summary = document.getElementById('summary');
+            
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            summary.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    // Check if first row is header
+                    const hasHeader = data.data[0] && data.data[0][0] && 
+                                     (typeof data.data[0][0] === 'string') && 
+                                     (data.data[0][0].includes('תאריך') || data.data[0][0].includes('Date') || 
+                                      data.data[0][0].includes('משקל') || data.data[0][0].includes('Weight'));
+                    
+                    const startIndex = hasHeader ? 1 : 0;
+                    
+                    // Convert data to the format we need
+                    // Assuming: row[0] = date, row[1] = weight, row[2] = muscle, row[3] = fat
+                    currentData = data.data.slice(startIndex).map(row => ({
+                        date: row[0], // Date
+                        weight: parseFloat(row[1]) || 0, // Weight
+                        muscle: parseFloat(row[2]) || 0, // Muscle
+                        fat: parseFloat(row[3]) || 0 // Fat
+                    })).filter(item => item.date && (item.muscle > 0 || item.fat > 0)); // Filter out invalid entries
+                    
+                    console.log(`נטענו ${currentData.length} נקודות נתונים`);
+                    
+                    if (currentData.length === 0) {
+                        results.innerHTML = '<div class="no-data">לא נמצאו נתונים תקינים ב-Google Sheets<br>ודא שיש עמודות שריר ושומן בנתונים</div>';
+                        return;
+                    }
+                    
+                    // Calculate and display summary
+                    const summaryStats = calculateSummary(currentData);
+                    if (summaryStats) {
+                        displaySummary(summaryStats);
+                    }
+                    
+                    // Display results
+                    displayResults();
+                } else {
+                    results.innerHTML = '<div class="no-data">לא נמצאו נתונים ב-Google Sheets</div>';
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת נתונים:', error);
+                let errorMessage = 'שגיאה בטעינת הנתונים';
+                
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'שגיאת CORS: לא ניתן לטעון נתונים מ-file://. אנא פתח את הקובץ דרך שרת מקומי או GitHub Pages.';
+                } else if (error.message) {
+                    errorMessage = `שגיאה: ${error.message}`;
+                }
+                
+                results.innerHTML = `<div class="no-data">${errorMessage}<br><button onclick="loadData()" style="margin-top: 10px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">נסה שוב</button></div>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+    </script>
+</body>
+</html>
+
