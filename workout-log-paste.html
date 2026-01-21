@@ -507,7 +507,10 @@
         }
         
         async function saveWorkout() {
+            console.log('saveWorkout called');
+            
             if (!parsedData || parsedData.exercises.length === 0) {
+                console.log('No parsed data');
                 showMessage('אין נתונים לשמירה. אנא נתח את הטקסט קודם.', 'error');
                 return;
             }
@@ -515,6 +518,7 @@
             const workoutDate = document.getElementById('workoutDate').value;
             
             if (!workoutDate) {
+                console.log('No date selected');
                 showMessage('אנא בחר תאריך', 'error');
                 return;
             }
@@ -522,6 +526,8 @@
             const saveBtn = document.getElementById('saveBtn');
             saveBtn.disabled = true;
             saveBtn.textContent = '💾 שומר...';
+            
+            console.log('Starting to save workout...');
             
             try {
                 // Format data for Google Sheets
@@ -542,19 +548,30 @@
                 });
                 
                 // Send to Google Sheets using GET to avoid CORS issues
-                // Note: We use 'no-cors' mode because Google Apps Script doesn't support CORS headers
-                // The data will be saved, but we won't be able to read the response
+                console.log('Preparing to send data...', rows.length, 'rows');
+                
                 const dataParam = encodeURIComponent(JSON.stringify(rows));
                 const url = `${GOOGLE_SCRIPT_URL}?action=addWorkoutLog&data=${dataParam}`;
                 
+                console.log('Sending request to:', GOOGLE_SCRIPT_URL);
+                console.log('URL length:', url.length);
+                
                 // Use no-cors mode - data will be saved but we can't verify
-                await fetch(url, {
+                const fetchPromise = fetch(url, {
                     method: 'GET',
                     mode: 'no-cors'
                 });
                 
+                console.log('Fetch promise created');
+                
+                await fetchPromise;
+                
+                console.log('Fetch completed');
+                
                 // Wait a moment for the request to complete
                 await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                console.log('Showing success message');
                 
                 // Since we can't verify with no-cors, we'll assume success
                 // User should check Google Sheet to confirm
@@ -571,8 +588,10 @@
                 
             } catch (error) {
                 console.error('Error saving workout:', error);
+                console.error('Error stack:', error.stack);
                 showMessage('שגיאה בשמירה: ' + error.message + '. אנא נסה שוב או בדוק את הקונסול לפרטים נוספים.', 'error');
             } finally {
+                console.log('Finally block - re-enabling button');
                 saveBtn.disabled = false;
                 saveBtn.textContent = '💾 שמור אימון';
             }
