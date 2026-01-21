@@ -547,35 +547,52 @@
                     });
                 });
                 
-                // Send to Google Sheets using GET to avoid CORS issues
+                // Send to Google Sheets using GET with small chunks to avoid URL length limits
                 console.log('Preparing to send data...', rows.length, 'rows');
-                
-                const dataParam = encodeURIComponent(JSON.stringify(rows));
-                const url = `${GOOGLE_SCRIPT_URL}?action=addWorkoutLog&data=${dataParam}`;
-                
                 console.log('Sending request to:', GOOGLE_SCRIPT_URL);
-                console.log('URL length:', url.length);
                 
-                // Use no-cors mode - data will be saved but we can't verify
-                const fetchPromise = fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors'
-                });
+                // Split data into small chunks to avoid URL length limits (max ~2000 chars per URL)
+                const CHUNK_SIZE = 20; // Send 20 rows at a time to keep URL short
+                let totalSaved = 0;
                 
-                console.log('Fetch promise created');
+                for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+                    const chunk = rows.slice(i, i + CHUNK_SIZE);
+                    const chunkNum = Math.floor(i/CHUNK_SIZE) + 1;
+                    const totalChunks = Math.ceil(rows.length / CHUNK_SIZE);
+                    
+                    console.log(`Sending chunk ${chunkNum}/${totalChunks}, rows ${i + 1} to ${Math.min(i + CHUNK_SIZE, rows.length)}`);
+                    
+                    try {
+                        // Use GET with no-cors mode (we can't verify but data will be saved)
+                        const dataParam = encodeURIComponent(JSON.stringify(chunk));
+                        const url = `${GOOGLE_SCRIPT_URL}?action=addWorkoutLog&data=${dataParam}`;
+                        
+                        console.log(`Chunk ${chunkNum} URL length:`, url.length);
+                        
+                        // Use no-cors mode - data will be saved but we can't verify
+                        await fetch(url, {
+                            method: 'GET',
+                            mode: 'no-cors'
+                        });
+                        
+                        totalSaved += chunk.length;
+                        console.log(`Chunk ${chunkNum} sent. Total sent: ${totalSaved}`);
+                        
+                        // Small delay between chunks
+                        if (i + CHUNK_SIZE < rows.length) {
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                    } catch (chunkError) {
+                        console.error(`Error sending chunk ${chunkNum}:`, chunkError);
+                        // Continue with next chunk even if one fails
+                    }
+                }
                 
-                await fetchPromise;
+                // Wait a bit for all requests to complete
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                console.log('Fetch completed');
-                
-                // Wait a moment for the request to complete
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                console.log('Showing success message');
-                
-                // Since we can't verify with no-cors, we'll assume success
-                // User should check Google Sheet to confirm
-                showMessage('✅ האימון נשלח לשמירה! אנא בדוק ב-Google Sheet שהנתונים נשמרו.', 'success');
+                console.log('All chunks sent');
+                showMessage(`✅ האימון נשלח לשמירה! ${totalSaved} שורות נשלחו. אנא בדוק ב-Google Sheet שהנתונים נשמרו.`, 'success');
                 
                 // Reset form after 3 seconds
                 setTimeout(() => {
