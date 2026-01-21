@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>רישום אימון - העתק והדבק</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .message.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .message.error {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .preview-section {
+            display: none;
+        }
+        
+        .preview-section.show {
+            display: block;
+        }
+        
+        .exercise-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .exercise-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .exercise-type {
+            font-size: 1rem;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        .sets-preview {
+            margin-top: 15px;
+        }
+        
+        .set-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr 1fr;
+            gap: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        
+        .set-type {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .set-type.warmup {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .set-type.set {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .set-type.drop {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .set-weight, .set-reps {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .set-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+            
+            .exercise-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 רישום אימון - העתק והדבק</h1>
+            <p>הדבק את סיכום האימון שלך והמערכת תזהה את כל התרגילים והסטים</p>
+        </div>
+        
+        <div class="main-card">
+            <div id="message"></div>
+            
+            <div class="form-group">
+                <label for="workoutDate">תאריך האימון</label>
+                <input type="date" id="workoutDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="workoutText">הדבק כאן את סיכום האימון:</label>
+                <textarea id="workoutText" placeholder="הדבק כאן את הטקסט של האימון...&#10;&#10;לדוגמה:&#10;Bench Press (Dumbbell)&#10;W: 12.5 kg × 12 reps&#10;Set 1: 25 kg × 10 reps&#10;Set 2: 25 kg × 10 reps"></textarea>
+            </div>
+            
+            <button class="btn" onclick="parseWorkout()" id="parseBtn">🔍 נתח טקסט</button>
+        </div>
+        
+        <div class="main-card preview-section" id="previewSection">
+            <h2 style="color: #667eea; margin-bottom: 20px;">📋 תצוגה מקדימה</h2>
+            
+            <div class="summary" id="summarySection"></div>
+            
+            <div id="exercisesPreview"></div>
+            
+            <button class="btn" onclick="saveWorkout()" id="saveBtn" style="background: linear-gradient(45deg, #667eea, #764ba2);">💾 שמור אימון</button>
+        </div>
+    </div>
+    
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm9p0ckreQ88HAqR-DZ_blJqyEhtm2GCQy_gXtvHyjXZULMdMgdWWFaIaFXfT-4ZT6/exec';
+        
+        let parsedData = null;
+        
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('workoutDate').value = today;
+        });
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function parseWorkout() {
+            const workoutText = document.getElementById('workoutText').value.trim();
+            
+            if (!workoutText) {
+                showMessage('אנא הדבק את הטקסט של האימון', 'error');
+                return;
+            }
+            
+            try {
+                parsedData = parseWorkoutText(workoutText);
+                
+                if (parsedData.exercises.length === 0) {
+                    showMessage('לא נמצאו תרגילים בטקסט. אנא בדוק את הפורמט.', 'error');
+                    return;
+                }
+                
+                displayPreview(parsedData);
+                showMessage(`✅ נמצאו ${parsedData.exercises.length} תרגילים עם ${parsedData.totalSets} סטים`, 'success');
+                
+            } catch (error) {
+                console.error('Parsing error:', error);
+                showMessage('שגיאה בניתוח הטקסט: ' + error.message, 'error');
+            }
+        }
+        
+        function parseWorkoutText(text) {
+            const exercises = [];
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            let currentExercise = null;
+            let exerciseIndex = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Check if this is an exercise name (contains parentheses with type)
+                const exerciseMatch = line.match(/^(.+?)\s*\((.+?)\)\s*$/);
+                
+                if (exerciseMatch) {
+                    // Save previous exercise if exists
+                    if (currentExercise && currentExercise.sets.length > 0) {
+                        exercises.push(currentExercise);
+                    }
+                    
+                    // Start new exercise
+                    currentExercise = {
+                        name: exerciseMatch[1].trim(),
+                        type: exerciseMatch[2].trim(),
+                        sets: []
+                    };
+                    exerciseIndex++;
+                } else if (currentExercise) {
+                    // This should be a set line
+                    const set = parseSetLine(line);
+                    if (set) {
+                        currentExercise.sets.push(set);
+                    }
+                }
+            }
+            
+            // Don't forget the last exercise
+            if (currentExercise && currentExercise.sets.length > 0) {
+                exercises.push(currentExercise);
+            }
+            
+            // Calculate totals
+            const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+            const totalVolume = exercises.reduce((sum, ex) => {
+                return sum + ex.sets.reduce((setSum, set) => setSum + (set.weight * set.reps), 0);
+            }, 0);
+            
+            return {
+                exercises: exercises,
+                totalSets: totalSets,
+                totalVolume: totalVolume
+            };
+        }
+        
+        function parseSetLine(line) {
+            // Pattern: "W: 12.5 kg × 12 reps" or "Set 1: 25 kg × 10 reps" or "D: 18 kg × 6 reps"
+            const patterns = [
+                /^W:\s*(\d+\.?\d*)\s*kg\s*×\s*(\d+)\s*reps?$/i,  // Warmup
+                /^Set\s+(\d+):\s*(\d+\.?\d*)\s*kg\s*×\s*(\d+)\s*reps?$/i,  // Regular set
+                /^D:\s*(\d+\.?\d*)\s*kg\s*×\s*(\d+)\s*reps?$/i   // Drop set
+            ];
+            
+            for (let i = 0; i < patterns.length; i++) {
+                const match = line.match(patterns[i]);
+                if (match) {
+                    if (i === 0) {
+                        // Warmup
+                        return {
+                            type: 'W',
+                            typeLabel: 'Warmup',
+                            weight: parseFloat(match[1]),
+                            reps: parseInt(match[2])
+                        };
+                    } else if (i === 1) {
+                        // Regular set
+                        return {
+                            type: `Set ${match[1]}`,
+                            typeLabel: `Set ${match[1]}`,
+                            weight: parseFloat(match[2]),
+                            reps: parseInt(match[3])
+                        };
+                    } else {
+                        // Drop set
+                        return {
+                            type: 'D',
+                            typeLabel: 'Drop',
+                            weight: parseFloat(match[1]),
+                            reps: parseInt(match[2])
+                        };
+                    }
+                }
+            }
+            
+            return null;
+        }
+        
+        function displayPreview(data) {
+            const previewSection = document.getElementById('previewSection');
+            previewSection.classList.add('show');
+            
+            // Display summary
+            const summarySection = document.getElementById('summarySection');
+            summarySection.innerHTML = `
+                <h3 style="margin-bottom: 15px;">📊 סיכום</h3>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${data.exercises.length}</div>
+                        <div class="stat-label">תרגילים</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.totalSets}</div>
+                        <div class="stat-label">סה"כ סטים</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.totalVolume.toFixed(0)}</div>
+                        <div class="stat-label">נפח כולל (ק"ג)</div>
+                    </div>
+                </div>
+            `;
+            
+            // Display exercises
+            const exercisesPreview = document.getElementById('exercisesPreview');
+            exercisesPreview.innerHTML = '';
+            
+            data.exercises.forEach((exercise, index) => {
+                const exerciseDiv = document.createElement('div');
+                exerciseDiv.className = 'exercise-preview';
+                
+                let setsHTML = '<div class="sets-preview">';
+                setsHTML += '<div class="set-row" style="background: #e9ecef; font-weight: bold;">';
+                setsHTML += '<div>סוג סט</div><div style="text-align: center;">משקל (ק"ג)</div><div style="text-align: center;">חזרות</div><div style="text-align: center;">נפח</div>';
+                setsHTML += '</div>';
+                
+                exercise.sets.forEach(set => {
+                    const volume = set.weight * set.reps;
+                    const setTypeClass = set.type === 'W' ? 'warmup' : set.type.startsWith('Set') ? 'set' : 'drop';
+                    
+                    setsHTML += `
+                        <div class="set-row">
+                            <div class="set-type ${setTypeClass}">${set.typeLabel}</div>
+                            <div class="set-weight">${set.weight} ק"ג</div>
+                            <div class="set-reps">${set.reps}</div>
+                            <div style="text-align: center; font-weight: bold; color: #667eea;">${volume.toFixed(0)} ק"ג</div>
+                        </div>
+                    `;
+                });
+                
+                setsHTML += '</div>';
+                
+                exerciseDiv.innerHTML = `
+                    <div class="exercise-header">
+                        <div>
+                            <span class="exercise-title">${exercise.name}</span>
+                            <span class="exercise-type">(${exercise.type})</span>
+                        </div>
+                        <div style="color: #666; font-size: 0.9rem;">
+                            ${exercise.sets.length} סטים
+                        </div>
+                    </div>
+                    ${setsHTML}
+                `;
+                
+                exercisesPreview.appendChild(exerciseDiv);
+            });
+            
+            // Scroll to preview
+            previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        async function saveWorkout() {
+            if (!parsedData || parsedData.exercises.length === 0) {
+                showMessage('אין נתונים לשמירה. אנא נתח את הטקסט קודם.', 'error');
+                return;
+            }
+            
+            const workoutDate = document.getElementById('workoutDate').value;
+            
+            if (!workoutDate) {
+                showMessage('אנא בחר תאריך', 'error');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '💾 שומר...';
+            
+            try {
+                // Format data for Google Sheets
+                // Each row: Date, Exercise Name, Exercise Type, Set Type, Weight, Reps
+                const rows = [];
+                
+                parsedData.exercises.forEach(exercise => {
+                    exercise.sets.forEach(set => {
+                        rows.push([
+                            workoutDate,
+                            exercise.name,
+                            exercise.type,
+                            set.type,
+                            set.weight,
+                            set.reps
+                        ]);
+                    });
+                });
+                
+                // Send to Google Sheets
+                // Note: If you're opening from file://, you'll get CORS error
+                // Solution: Upload to GitHub Pages or use a local server
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'addWorkoutLog',
+                        data: rows
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ האימון נשמר בהצלחה!', 'success');
+                    
+                    // Reset form after 2 seconds
+                    setTimeout(() => {
+                        document.getElementById('workoutText').value = '';
+                        document.getElementById('previewSection').classList.remove('show');
+                        parsedData = null;
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('workoutDate').value = today;
+                    }, 2000);
+                } else {
+                    showMessage('שגיאה בשמירה: ' + (result.error || 'שגיאה לא ידועה'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error saving workout:', error);
+                
+                // Check if it's a CORS error
+                if (error.message && error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    showMessage('שגיאת CORS: פתח את הקובץ דרך GitHub Pages או שרת מקומי. אם אתה משתמש ב-file://, העלה את הקובץ ל-GitHub Pages.', 'error');
+                } else {
+                    showMessage('שגיאה בשמירה: ' + error.message, 'error');
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 שמור אימון';
+            }
+        }
+    </script>
+</body>
+</html>
+
